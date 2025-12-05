@@ -26,7 +26,7 @@ fn main() {
 
     unsafe {
         gl::Viewport(0, 0, 800, 600);
-        gl::ClearColor(0.1, 0.1, 0.2, 1.0);
+        gl::ClearColor(0.2, 0.3, 0.3, 1.0);
     }
 
     // --- dane wierzchołków trójkąta ---

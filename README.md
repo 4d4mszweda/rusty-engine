@@ -6,7 +6,7 @@
 - GLFW zainstalowane w systemie  
   (na Linux i macOs)
   ```bash
-  sudo apt install libglfw3-dev libgl1-mesa-dev
+  sudo apt install libglfw3-dev libgl1-mesa-dev cmake
   ```
 - plus inne wymagane biblioteki (rust kompiluje wszystko ze źródła, przy próbie kompilacji wypisze wszystko czego brakuje)
 

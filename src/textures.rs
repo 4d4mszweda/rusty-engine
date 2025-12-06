@@ -59,4 +59,20 @@ impl Texture {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
         }
     }
+    pub fn set_mirrored_repeat(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_S,
+                gl::MIRRORED_REPEAT as i32,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_T,
+                gl::MIRRORED_REPEAT as i32,
+            );
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
 }

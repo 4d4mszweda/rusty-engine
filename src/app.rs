@@ -35,9 +35,9 @@ impl App {
         let program = Program::from_files("assets/shaders/basic.vert", "assets/shaders/basic.frag");
 
         // Ładowanie siatek
-        let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground.obj"));
-        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/tree.obj"));
-        let house_mesh = Rc::new(Mesh::from_obj("assets/models/house.obj"));
+        let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
+        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
+        let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
         let rock_mesh = Rc::new(Mesh::from_obj("assets/models/rock.obj"));
 
         // Tworzenie obiektów sceny

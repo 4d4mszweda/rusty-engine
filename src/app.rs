@@ -1,7 +1,8 @@
-use cgmath::{Matrix4, Vector3};
+use cgmath::{Matrix4, Rad, Vector3};
 
 use glfw::{Action, Context, Key};
 
+use crate::textures::Texture;
 use std::rc::Rc;
 
 use std::sync::mpsc::Receiver;
@@ -33,6 +34,8 @@ impl App {
 
         // let program = Program::new(shaders::basic::VERT, shaders::basic::FRAG);
         let program = Program::from_files("assets/shaders/basic.vert", "assets/shaders/basic.frag");
+        program.use_program();
+        program.set_int("u_diffuse", 0); // sampler2D używa TEXTURE0
 
         // Ładowanie siatek
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
@@ -42,7 +45,46 @@ impl App {
 
         // Tworzenie obiektów sceny
         let mut objects = Vec::new();
+        // KWIATKI – wiele kopii tego samego „obiektu”:
+        // kwiatek = dwie przecinające się płaszczyzny
+        let flower_positions = [
+            Vector3::new(-2.0, 0.0, 1.0),
+            Vector3::new(-1.0, 0.0, 3.0),
+            Vector3::new(0.0, 0.0, 2.5),
+            Vector3::new(1.0, 0.0, 1.5),
+            Vector3::new(2.0, 0.0, 3.0),
+        ];
 
+        let flower_tex = Rc::new(Texture::from_file("assets/textures/flower32bit.png"));
+        let flower_mesh = Rc::new(Mesh::quad());
+
+        for pos in &flower_positions {
+            // pierwszy quad
+            let model1 = Matrix4::from_translation(*pos) * Matrix4::from_scale(0.7);
+            objects.push(
+                SceneObject::new(
+                    flower_mesh.clone(),
+                    model1,
+                    Vector3::new(1.0, 1.0, 1.0),
+                    Vector3::new(1.0, 1.0, 1.0),
+                )
+                .with_texture(flower_tex.clone(), true),
+            );
+
+            // drugi quad – obrócony o 90 stopni wokół Y
+            let model2 = Matrix4::from_translation(*pos)
+                * Matrix4::from_angle_y(Rad(std::f32::consts::FRAC_PI_2))
+                * Matrix4::from_scale(0.7);
+            objects.push(
+                SceneObject::new(
+                    flower_mesh.clone(),
+                    model2,
+                    Vector3::new(1.0, 1.0, 1.0),
+                    Vector3::new(1.0, 1.0, 1.0),
+                )
+                .with_texture(flower_tex.clone(), true),
+            );
+        }
         // Podłoże
         let ground_model = Matrix4::from_scale(1.0);
         objects.push(

@@ -30,5 +30,8 @@ pub fn init_gl(window: &mut glfw::Window) {
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
         gl::ClearColor(0.2, 0.3, 0.4, 1.0);
+
+        gl::Enable(gl::BLEND);
+        gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
 }

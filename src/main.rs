@@ -7,6 +7,7 @@ mod input;
 mod mesh;
 mod scene_object;
 mod shader;
+mod textures;
 
 fn main() {
     //ex::hello_triangle::run(); // ex1

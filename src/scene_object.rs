@@ -4,18 +4,26 @@ use cgmath::{InnerSpace, Matrix4, Rad, Vector3};
 
 use crate::mesh::Mesh;
 use crate::shader::Program;
+use crate::textures::Texture;
 
 pub struct SceneObject {
     pub mesh: Rc<Mesh>,
     pub base_model: Matrix4<f32>,
     pub base_color1: Vector3<f32>,
     pub base_color2: Vector3<f32>,
+
+    // ANIMACJE
     pub animate_rotation: bool,
     pub animate_color: bool,
     pub rotation_axis: Vector3<f32>,
     pub rotation_speed: f32,
     pub color_speed: f32,
     pub is_ground: bool,
+
+    // TEKSTURY
+    pub texture: Option<Rc<Texture>>,
+    pub use_texture: bool,
+    pub alpha_cutout: bool,
 }
 
 impl SceneObject {
@@ -36,6 +44,9 @@ impl SceneObject {
             rotation_speed: 0.0,
             color_speed: 0.0,
             is_ground: false,
+            texture: None,
+            use_texture: false,
+            alpha_cutout: false,
         }
     }
 
@@ -54,6 +65,13 @@ impl SceneObject {
 
     pub fn with_ground(mut self, is_ground: bool) -> Self {
         self.is_ground = is_ground;
+        self
+    }
+
+    pub fn with_texture(mut self, texture: Rc<Texture>, alpha_cutout: bool) -> Self {
+        self.use_texture = true;
+        self.alpha_cutout = alpha_cutout;
+        self.texture = Some(texture);
         self
     }
 
@@ -82,6 +100,15 @@ impl SceneObject {
         program.set_vec3("u_color1", &c1);
         program.set_vec3("u_color2", &c2);
         program.set_int("u_is_ground", if self.is_ground { 1 } else { 0 });
+
+        if let Some(tex) = &self.texture {
+            tex.bind(0);
+            program.set_int("u_use_texture", 1);
+            program.set_int("u_alpha_cutout", if self.alpha_cutout { 1 } else { 0 });
+        } else {
+            program.set_int("u_use_texture", 0);
+            program.set_int("u_alpha_cutout", 0);
+        }
 
         self.mesh.draw();
     }

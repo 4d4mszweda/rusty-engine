@@ -117,4 +117,65 @@ impl Mesh {
             gl::BindVertexArray(0);
         }
     }
+
+    pub fn quad() -> Mesh {
+        // 2 trójkąty, front-facing w stronę +Z (albo +Y, jak wolisz; ważna spójność z KW)
+        let vertices: [f32; 6 * 8] = [
+            // pos(x,y,z)      normal      tex(u,v)
+            -0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.5,
+            1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, -0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5, 1.0,
+            0.0, 0.0, 0.0, 1.0, 1.0, 1.0, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
+        ];
+
+        let mut vao = 0;
+        let mut vbo = 0;
+
+        unsafe {
+            gl::GenVertexArrays(1, &mut vao);
+            gl::GenBuffers(1, &mut vbo);
+
+            gl::BindVertexArray(vao);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (vertices.len() * std::mem::size_of::<f32>()) as isize,
+                vertices.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
+
+            let stride = (8 * std::mem::size_of::<f32>()) as i32;
+
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, stride, std::ptr::null());
+
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(
+                1,
+                3,
+                gl::FLOAT,
+                gl::FALSE,
+                stride,
+                (3 * std::mem::size_of::<f32>()) as *const _,
+            );
+
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(
+                2,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                stride,
+                (6 * std::mem::size_of::<f32>()) as *const _,
+            );
+
+            gl::BindVertexArray(0);
+        }
+
+        Mesh {
+            vao,
+            vbo: vbo, // jeśli używasz `_vbo` jak wcześniej
+            vertex_count: 6,
+        }
+    }
 }

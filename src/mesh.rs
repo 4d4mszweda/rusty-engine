@@ -119,7 +119,6 @@ impl Mesh {
     }
 
     pub fn quad() -> Mesh {
-        // 2 trójkąty, front-facing w stronę +Z (albo +Y, jak wolisz; ważna spójność z KW)
         let vertices: [f32; 6 * 8] = [
             // pos(x,y,z)      normal      tex(u,v)
             -0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.5,

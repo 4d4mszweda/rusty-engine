@@ -34,18 +34,16 @@ impl App {
         // let program = Program::new(shaders::basic::VERT, shaders::basic::FRAG);
         let program = Program::from_files("assets/shaders/basic.vert", "assets/shaders/basic.frag");
         program.use_program();
-        program.set_int("u_diffuse", 0); // sampler2D używa TEXTURE0
+        program.set_int("u_diffuse", 0);
 
         // Ładowanie siatek
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
         let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
         let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
         let rock_mesh = Rc::new(Mesh::from_obj("assets/models/rock.obj"));
+        let flower_mesh = Rc::new(Mesh::quad());
 
-        // Tworzenie obiektów sceny
         let mut objects = Vec::new();
-        // KWIATKI – wiele kopii tego samego „obiektu”:
-        // kwiatek = dwie przecinające się płaszczyzny
         // let flower_positions = [
         //     Vector3::new(-2.0, 0.0, 1.0),
         //     Vector3::new(-1.0, 0.0, 3.0),
@@ -54,16 +52,15 @@ impl App {
         //     Vector3::new(2.0, 0.0, 3.0),
         // ];
 
+        // --- Meshe ---
         let flower_tex = Rc::new(Texture::from_file("assets/textures/flower32bit.png"));
-        let flower_mesh = Rc::new(Mesh::quad());
-
         let ground_tex = Rc::new(Texture::from_file("assets/textures/ground.jpg"));
         ground_tex.set_mirrored_repeat();
         let cactus_tex = Rc::new(Texture::from_file("assets/textures/cactus.jpg"));
         let rock_tex = Rc::new(Texture::from_file("assets/textures/rock.jpg"));
 
         let mut rng = rand::thread_rng();
-        let flower_count = 120; // możesz zmienić na 200, 300 itd.
+        let flower_count = 120;
 
         for _ in 0..flower_count {
             // ZAKRES X,Z dopasuj do rozmiaru swojego ground-large.obj
@@ -140,11 +137,11 @@ impl App {
             SceneObject::new(
                 ground_mesh.clone(),
                 ground_model,
-                Vector3::new(0.6, 0.6, 0.6), // kolory bazowe – mogą być jaśniejsze, bo będą mnożone z teksturą
+                Vector3::new(0.6, 0.6, 0.6),
                 Vector3::new(0.8, 0.8, 0.8),
             )
             .with_ground(true)
-            .with_texture(ground_tex.clone(), false), // ⬅️ tu ważne
+            .with_texture(ground_tex.clone(), false),
         );
 
         // Drzewo – animacja koloru
@@ -160,16 +157,15 @@ impl App {
         );
 
         // Dom – statyczny
-
         let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
         objects.push(
             SceneObject::new(
                 house_mesh.clone(),
                 house_model,
-                Vector3::new(1.0, 1.0, 1.0), // kolor bazowy, ale i tak go nadpisze tekstura
+                Vector3::new(1.0, 1.0, 1.0),
                 Vector3::new(1.0, 1.0, 1.0),
             )
-            .with_texture(cactus_tex.clone(), false), // <--- NAJWAŻNIEJSZA LINIA
+            .with_texture(cactus_tex.clone(), false),
         );
 
         // Skała 1 – obrót
@@ -179,7 +175,7 @@ impl App {
             SceneObject::new(
                 rock_mesh.clone(),
                 rock_model1,
-                Vector3::new(1.0, 1.0, 1.0), // najlepiej biały przy teksturowaniu
+                Vector3::new(1.0, 1.0, 1.0),
                 Vector3::new(1.0, 1.0, 1.0),
             )
             .with_rotation(cgmath::Vector3::new(0.0, 1.0, 0.0), 1.0)

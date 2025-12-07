@@ -11,7 +11,7 @@ uniform int u_is_ground;
 // tekstury
 uniform sampler2D u_diffuse;
 uniform int u_use_texture;     // 1 = używamy tekstury, 0 = gradient
-uniform int u_alpha_cutout;    // 1 = używamy alpha discard (np. kwiatek)
+uniform int u_alpha_cutout;    // 1 = używamy alpha discard
 
 out vec4 FragColor;
 
@@ -36,7 +36,7 @@ void main() {
             discard;
         }
 
-        // mnożenie tekstury przez gradient daje fajniejszy efekt
+        // mnożenie tekstury przez gradient t
         base_color = texColor.rgb * base_color;
     }
 

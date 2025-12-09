@@ -1,7 +1,7 @@
 // mod ex; //testing examples
 
-mod app;
 mod camera;
+mod engine;
 mod glcontext;
 mod input;
 mod mesh;
@@ -12,6 +12,6 @@ mod textures;
 fn main() {
     //ex::hello_triangle::run(); // ex1
 
-    let mut app = app::App::new(1280, 720, "Rust OBJ Scene");
-    app.run();
+    let mut engine = engine::Engine::new(1280, 720, "Rust OBJ Scene");
+    engine.run();
 }

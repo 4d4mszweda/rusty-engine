@@ -1,8 +1,12 @@
 use cgmath::{Matrix4, Rad, Vector3};
 
+use egui::{self, FullOutput, Pos2, Rect, vec2};
+use egui_glow::Painter;
+use egui_glow::glow;
 use glfw::{Action, Context, Key};
 use rand::Rng;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 
 use crate::camera::Camera;
@@ -12,7 +16,7 @@ use crate::scene_object::SceneObject;
 use crate::shader::Program;
 use crate::textures::Texture;
 
-pub struct App {
+pub struct Engine {
     glfw: glfw::Glfw,
     window: glfw::Window,
     events: Receiver<(f64, glfw::WindowEvent)>,
@@ -20,9 +24,12 @@ pub struct App {
     objects: Vec<SceneObject>,
     camera: Camera,
     last_time: f32,
+
+    egui_ctx: egui::Context,
+    egui_painter: egui_glow::Painter,
 }
 
-impl App {
+impl Engine {
     pub fn new(width: u32, height: u32, title: &str) -> Self {
         let mut glfw = glcontext::init_glfw();
 
@@ -35,6 +42,24 @@ impl App {
         let program = Program::from_files("assets/shaders/basic.vert", "assets/shaders/basic.frag");
         program.use_program();
         program.set_int("u_diffuse", 0);
+
+        // --- EGUI INIT ---
+
+        // 1. Glow context – używamy tego samego loadera co dla gl-rs
+        let glow_ctx = unsafe {
+            glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _)
+        };
+        // Painter oczekuje Arc<glow::Context>
+        let glow_ctx = Arc::new(glow_ctx);
+
+        let egui_ctx = egui::Context::default();
+        let egui_painter = Painter::new(
+            glow_ctx.clone(), // Arc<glow::Context>
+            "",               // shader_prefix
+            None,             // shader_version – auto
+            false,            // dithering
+        )
+        .expect("Failed to create egui_glow Painter");
 
         // Ładowanie siatek
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
@@ -201,7 +226,7 @@ impl App {
 
         let last_time = glfw.get_time() as f32;
 
-        App {
+        Engine {
             glfw,
             window,
             events,
@@ -209,6 +234,8 @@ impl App {
             objects,
             camera,
             last_time,
+            egui_ctx,
+            egui_painter,
         }
     }
 
@@ -220,12 +247,68 @@ impl App {
 
             self.glfw.poll_events();
 
+            // Ruch kamery itp.
             self.handle_input(dt);
+
+            // 1. Budujemy prosty RawInput dla egui
+            let (width, height) = self.window.get_size();
+            let width = width.max(1) as f32;
+            let height = height.max(1) as f32;
+
+            let raw_input = egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(
+                    Pos2::new(0.0, 0.0),
+                    vec2(width, height),
+                )),
+                time: Some(current_time as f64),
+                // na razie bez myszy, klawiatury itd.
+                ..Default::default()
+            };
+
+            // 2. Nowa klatka egui
+            let full_output: FullOutput = self.egui_ctx.run(raw_input, |egui_ctx| {
+                egui::Window::new("Debug").show(egui_ctx, |ui| {
+                    ui.label(format!("Time: {:.2}", current_time));
+                    ui.label(format!("Objects: {}", self.objects.len()));
+                });
+            });
+
+            let FullOutput {
+                platform_output: _,
+                textures_delta,
+                shapes,
+                ..
+            } = full_output;
+
+            // 3. Render sceny 3D
             self.render(current_time);
+
+            // 6. render UI (na wierzchu)
+
+            // pixels_per_point – ile fizycznych pikseli na 1 logical point
+            let pixels_per_point = self.egui_ctx.pixels_per_point();
+
+            // 6a. Tessellacja kształtów z egui -> prymitywy do rysowania
+            let clipped_primitives = self.egui_ctx.tessellate(shapes, pixels_per_point);
+
+            // 6b. Aktualizacja tekstur egui (fonty, obrazki itp.)
+            for (id, delta) in textures_delta.set {
+                self.egui_painter.set_texture(id, &delta);
+            }
+            for id in textures_delta.free {
+                self.egui_painter.free_texture(id);
+            }
+
+            // 6c. Rysowanie prymitywów egui
+            self.egui_painter.paint_primitives(
+                [width as u32, height as u32],
+                pixels_per_point,
+                &clipped_primitives,
+            );
 
             self.window.swap_buffers();
 
-            // obsługa zdarzeń (np. ESC)
+            // 5. Obsługa ESC itd.
             for (_, event) in glfw::flush_messages(&self.events) {
                 match event {
                     glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {

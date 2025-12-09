@@ -3,6 +3,7 @@
 mod camera;
 mod engine;
 mod glcontext;
+mod gui;
 mod input;
 mod mesh;
 mod scene_object;

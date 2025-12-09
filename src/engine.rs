@@ -1,7 +1,5 @@
 use cgmath::{Matrix4, Rad, Vector3};
 
-use egui::{self, FullOutput, Pos2, Rect, vec2};
-use egui_glow::Painter;
 use egui_glow::glow;
 use glfw::{Action, Context, Key};
 use rand::Rng;
@@ -11,6 +9,7 @@ use std::sync::mpsc::Receiver;
 
 use crate::camera::Camera;
 use crate::glcontext;
+use crate::gui::Gui;
 use crate::mesh::Mesh;
 use crate::scene_object::SceneObject;
 use crate::shader::Program;
@@ -25,8 +24,7 @@ pub struct Engine {
     camera: Camera,
     last_time: f32,
 
-    egui_ctx: egui::Context,
-    egui_painter: egui_glow::Painter,
+    gui: Gui,
 }
 
 impl Engine {
@@ -43,23 +41,12 @@ impl Engine {
         program.use_program();
         program.set_int("u_diffuse", 0);
 
-        // --- EGUI INIT ---
-
-        // 1. Glow context – używamy tego samego loadera co dla gl-rs
         let glow_ctx = unsafe {
             glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _)
         };
-        // Painter oczekuje Arc<glow::Context>
         let glow_ctx = Arc::new(glow_ctx);
 
-        let egui_ctx = egui::Context::default();
-        let egui_painter = Painter::new(
-            glow_ctx.clone(), // Arc<glow::Context>
-            "",               // shader_prefix
-            None,             // shader_version – auto
-            false,            // dithering
-        )
-        .expect("Failed to create egui_glow Painter");
+        let gui = Gui::new(glow_ctx.clone());
 
         // Ładowanie siatek
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
@@ -234,8 +221,7 @@ impl Engine {
             objects,
             camera,
             last_time,
-            egui_ctx,
-            egui_painter,
+            gui,
         }
     }
 
@@ -247,69 +233,15 @@ impl Engine {
 
             self.glfw.poll_events();
 
-            // Ruch kamery itp.
-            self.handle_input(dt);
+            // 1. Nowa klatka egui
+            self.gui.begin_frame();
 
-            // 1. Budujemy prosty RawInput dla egui
-            let (width, height) = self.window.get_size();
-            let width = width.max(1) as f32;
-            let height = height.max(1) as f32;
-
-            let raw_input = egui::RawInput {
-                screen_rect: Some(Rect::from_min_size(
-                    Pos2::new(0.0, 0.0),
-                    vec2(width, height),
-                )),
-                time: Some(current_time as f64),
-                // na razie bez myszy, klawiatury itd.
-                ..Default::default()
-            };
-
-            // 2. Nowa klatka egui
-            let full_output: FullOutput = self.egui_ctx.run(raw_input, |egui_ctx| {
-                egui::Window::new("Debug").show(egui_ctx, |ui| {
-                    ui.label(format!("Time: {:.2}", current_time));
-                    ui.label(format!("Objects: {}", self.objects.len()));
-                });
-            });
-
-            let FullOutput {
-                platform_output: _,
-                textures_delta,
-                shapes,
-                ..
-            } = full_output;
-
-            // 3. Render sceny 3D
-            self.render(current_time);
-
-            // 6. render UI (na wierzchu)
-
-            // pixels_per_point – ile fizycznych pikseli na 1 logical point
-            let pixels_per_point = self.egui_ctx.pixels_per_point();
-
-            // 6a. Tessellacja kształtów z egui -> prymitywy do rysowania
-            let clipped_primitives = self.egui_ctx.tessellate(shapes, pixels_per_point);
-
-            // 6b. Aktualizacja tekstur egui (fonty, obrazki itp.)
-            for (id, delta) in textures_delta.set {
-                self.egui_painter.set_texture(id, &delta);
-            }
-            for id in textures_delta.free {
-                self.egui_painter.free_texture(id);
-            }
-
-            // 6c. Rysowanie prymitywów egui
-            self.egui_painter.paint_primitives(
-                [width as u32, height as u32],
-                pixels_per_point,
-                &clipped_primitives,
-            );
-
-            self.window.swap_buffers();
-
-            // 5. Obsługa ESC itd.
+            // 2. Obsługa eventów z glfw
             for (_, event) in glfw::flush_messages(&self.events) {
+                // przekazujemy do egui
+                self.gui.on_glfw_event(&self.window, &event);
+
+                // równolegle logika silnika (ESC itd.)
                 match event {
                     glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                         self.window.set_should_close(true);
@@ -317,6 +249,25 @@ impl Engine {
                     _ => {}
                 }
             }
+
+            // 3. Input kamery – możesz rozważyć:
+            //    jeśli gui.ctx().wants_pointer_input() => nie ruszaj kamery
+            self.handle_input(dt);
+
+            let last_time = self.last_time;
+            let objects_count = self.objects.len();
+
+            let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
+                Engine::build_ui(ctx, last_time, objects_count);
+            });
+
+            self.render(current_time);
+
+            // 6. Render egui na wierzchu
+            self.gui.paint(&self.window, full_output);
+
+            // 7. Swap buffers
+            self.window.swap_buffers();
         }
     }
 
@@ -326,6 +277,12 @@ impl Engine {
 
     fn render(&mut self, time: f32) {
         unsafe {
+            // Przywróć stan dla 3D
+            gl::Enable(gl::DEPTH_TEST);
+            gl::DepthMask(gl::TRUE);
+            gl::Disable(gl::BLEND);
+            gl::DepthFunc(gl::LESS);
+
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
@@ -338,5 +295,17 @@ impl Engine {
         for obj in &self.objects {
             obj.draw(&self.program, time, &view, &proj);
         }
+    }
+
+    fn build_ui(ctx: &egui::Context, last_time: f32, objects_count: usize) {
+        egui::Window::new("Debug").show(ctx, |ui| {
+            ui.label(format!("Time: {:.2}", last_time));
+            ui.label(format!("Objects: {}", objects_count));
+        });
+
+        egui::Window::new("Camera").show(ctx, |ui| {
+            ui.label("Tu sobie później dodasz suwaki do kamery");
+            ui.label("(np. radius/yaw/pitch, zależnie co masz w Camera)");
+        });
     }
 }

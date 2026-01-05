@@ -1,5 +1,4 @@
 use cgmath::{Matrix4, Rad, Vector3};
-
 use egui_glow::glow;
 use glfw::{Action, Context, Key};
 use rand::Rng;
@@ -23,7 +22,6 @@ pub struct Engine {
     objects: Vec<SceneObject>,
     camera: Camera,
     last_time: f32,
-
     gui: Gui,
 }
 

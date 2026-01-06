@@ -59,7 +59,7 @@ impl Texture {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
         }
     }
-    pub fn set_mirrored_repeat(&self) {
+    pub fn set_mirrored_repeat(self) -> Self {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
             gl::TexParameteri(
@@ -74,5 +74,6 @@ impl Texture {
             );
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
+        self
     }
 }

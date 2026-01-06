@@ -1,7 +1,6 @@
-use cgmath::{Matrix4, Rad, Vector3};
+use cgmath::{Matrix4, Vector3};
 use egui_glow::glow;
 use glfw::{Action, Context, Key};
-use rand::Rng;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
@@ -15,26 +14,29 @@ use crate::shader::Program;
 use crate::textures::Texture;
 
 pub struct Engine {
-    glfw: glfw::Glfw,
-    window: glfw::Window,
-    events: Receiver<(f64, glfw::WindowEvent)>,
-    program: Program,
-    objects: Vec<SceneObject>,
-    camera: Camera,
-    last_time: f32,
-    gui: Gui,
+    glfw: glfw::Glfw,                           // CONTEXT
+    window: glfw::Window,                       // WINDOW CONTEXT
+    events: Receiver<(f64, glfw::WindowEvent)>, // KEYMAPS EVENTS
+    program: Program,                           // SHADERS
+    objects: Vec<SceneObject>,                  // OBJECTS ON THE SCENE
+    camera: Camera,                             // CAMERA
+    last_time: f32,                             // JUST TIME
+    gui: Gui,                                   // GUI CONTEXT
 }
+
+// TODO wywalić wszystko z konstruktura i zrobić aby wszystko było modyfikowalne z perspektywy gui
 
 impl Engine {
     pub fn new(width: u32, height: u32, title: &str) -> Self {
+        // INIT GLFW
         let mut glfw = glcontext::init_glfw();
 
+        // INIT WINDOW
         let (mut window, events) = glcontext::create_window(&mut glfw, width, height, title);
         window.make_current();
-
         glcontext::init_gl(&mut window);
 
-        // let program = Program::new(shaders::basic::VERT, shaders::basic::FRAG);
+        // SHADERS
         let program = Program::from_files("assets/shaders/basic.vert", "assets/shaders/basic.frag");
         program.use_program();
         program.set_int("u_diffuse", 0);
@@ -44,179 +46,19 @@ impl Engine {
         };
         let glow_ctx = Arc::new(glow_ctx);
 
+        // GUI
         let gui = Gui::new(glow_ctx.clone());
-
-        // Ładowanie siatek
-        let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
-        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
-        let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
-        let rock_mesh = Rc::new(Mesh::from_obj("assets/models/rock.obj"));
-        let flower_mesh = Rc::new(Mesh::quad());
-
-        let mut objects = Vec::new();
-        // let flower_positions = [
-        //     Vector3::new(-2.0, 0.0, 1.0),
-        //     Vector3::new(-1.0, 0.0, 3.0),
-        //     Vector3::new(0.0, 0.0, 2.5),
-        //     Vector3::new(1.0, 0.0, 1.5),
-        //     Vector3::new(2.0, 0.0, 3.0),
-        // ];
-
-        // --- Meshe ---
-        let flower_tex = Rc::new(Texture::from_file("assets/textures/flower32bit.png"));
-        let ground_tex = Rc::new(Texture::from_file("assets/textures/ground.jpg"));
-        ground_tex.set_mirrored_repeat();
-        let cactus_tex = Rc::new(Texture::from_file("assets/textures/cactus.jpg"));
-        let rock_tex = Rc::new(Texture::from_file("assets/textures/rock.jpg"));
-
-        let mut rng = rand::thread_rng();
-        let flower_count = 120;
-
-        for _ in 0..flower_count {
-            // ZAKRES X,Z dopasuj do rozmiaru swojego ground-large.obj
-            // Załóżmy np. ziemia ~ od -8 do 8 w obu osiach:
-            let x = rng.gen_range(-8.0, 8.0);
-            let z = rng.gen_range(-8.0, 8.0);
-
-            // losowa skala kwiatka
-            let scale = rng.gen_range(0.4, 1.0);
-
-            // losowy obrót wokół Y
-            let rotation = rng.gen_range(0.0, std::f32::consts::TAU);
-
-            // pierwszy quad
-            let model1 = Matrix4::from_translation(Vector3::new(x, 0.0, z))
-                * Matrix4::from_angle_y(Rad(rotation))
-                * Matrix4::from_scale(scale);
-
-            objects.push(
-                SceneObject::new(
-                    flower_mesh.clone(),
-                    model1,
-                    Vector3::new(1.0, 1.0, 1.0),
-                    Vector3::new(1.0, 1.0, 1.0),
-                )
-                .with_texture(flower_tex.clone(), true),
-            );
-
-            // drugi quad – obrócony o 90° względem pierwszego
-            let model2 = Matrix4::from_translation(Vector3::new(x, 0.0, z))
-                * Matrix4::from_angle_y(Rad(rotation + std::f32::consts::FRAC_PI_2))
-                * Matrix4::from_scale(scale);
-
-            objects.push(
-                SceneObject::new(
-                    flower_mesh.clone(),
-                    model2,
-                    Vector3::new(1.0, 1.0, 1.0),
-                    Vector3::new(1.0, 1.0, 1.0),
-                )
-                .with_texture(flower_tex.clone(), true),
-            );
-        }
-        //    for pos in &flower_positions {
-        //        // pierwszy quad
-        //        let model1 = Matrix4::from_translation(*pos) * Matrix4::from_scale(0.7);
-        //        objects.push(
-        //            SceneObject::new(
-        //                flower_mesh.clone(),
-        //                model1,
-        //                Vector3::new(1.0, 1.0, 1.0),
-        //                Vector3::new(1.0, 1.0, 1.0),
-        //            )
-        //            .with_texture(flower_tex.clone(), true),
-        //        );
-
-        //        // drugi quad – obrócony o 90 stopni wokół Y
-        //        let model2 = Matrix4::from_translation(*pos)
-        //            * Matrix4::from_angle_y(Rad(std::f32::consts::FRAC_PI_2))
-        //            * Matrix4::from_scale(0.7);
-        //        objects.push(
-        //            SceneObject::new(
-        //                flower_mesh.clone(),
-        //                model2,
-        //                Vector3::new(1.0, 1.0, 1.0),
-        //                Vector3::new(1.0, 1.0, 1.0),
-        //            )
-        //            .with_texture(flower_tex.clone(), true),
-        //        );
-        //    }
-        // Podłoże
-        let ground_model = Matrix4::from_scale(1.0);
-        objects.push(
-            SceneObject::new(
-                ground_mesh.clone(),
-                ground_model,
-                Vector3::new(0.6, 0.6, 0.6),
-                Vector3::new(0.8, 0.8, 0.8),
-            )
-            .with_ground(true)
-            .with_texture(ground_tex.clone(), false),
-        );
-
-        // Drzewo – animacja koloru
-        let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
-        objects.push(
-            SceneObject::new(
-                tree_mesh.clone(),
-                tree_model,
-                Vector3::new(0.1, 0.5, 0.1),
-                Vector3::new(0.6, 0.8, 0.3),
-            )
-            .with_color_animation(1.0),
-        );
-
-        // Dom – statyczny
-        let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
-        objects.push(
-            SceneObject::new(
-                house_mesh.clone(),
-                house_model,
-                Vector3::new(1.0, 1.0, 1.0),
-                Vector3::new(1.0, 1.0, 1.0),
-            )
-            .with_texture(cactus_tex.clone(), false),
-        );
-
-        // Skała 1 – obrót
-        let rock_model1 = Matrix4::from_translation(cgmath::Vector3::new(-1.0, 0.0, 2.0))
-            * Matrix4::from_scale(0.8);
-        objects.push(
-            SceneObject::new(
-                rock_mesh.clone(),
-                rock_model1,
-                Vector3::new(1.0, 1.0, 1.0),
-                Vector3::new(1.0, 1.0, 1.0),
-            )
-            .with_rotation(cgmath::Vector3::new(0.0, 1.0, 0.0), 1.0)
-            .with_texture(rock_tex.clone(), false),
-        );
-
-        // Skała 2 – obrót + kolor
-        let rock_model2 = Matrix4::from_translation(cgmath::Vector3::new(3.0, 0.0, 1.0))
-            * Matrix4::from_scale(0.5);
-        objects.push(
-            SceneObject::new(
-                rock_mesh.clone(),
-                rock_model2,
-                Vector3::new(1.0, 1.0, 1.0),
-                Vector3::new(1.0, 1.0, 1.0),
-            )
-            .with_rotation(cgmath::Vector3::new(0.0, 1.0, 0.0), 2.0)
-            .with_color_animation(2.0)
-            .with_texture(rock_tex.clone(), false),
-        );
-
-        let camera = Camera::new(12.0, 0.5, 0.8);
-
         let last_time = glfw.get_time() as f32;
+
+        // CAMERA
+        let camera = Camera::new(12.0, 0.5, 0.8);
 
         Engine {
             glfw,
             window,
             events,
             program,
-            objects,
+            objects: Vec::new(),
             camera,
             last_time,
             gui,
@@ -295,6 +137,7 @@ impl Engine {
         }
     }
 
+    // TEMP
     fn build_ui(ctx: &egui::Context, last_time: f32, objects_count: usize) {
         egui::Window::new("Debug").show(ctx, |ui| {
             ui.label(format!("Time: {:.2}", last_time));
@@ -305,5 +148,57 @@ impl Engine {
             ui.label("Tu sobie później dodasz suwaki do kamery");
             ui.label("(np. radius/yaw/pitch, zależnie co masz w Camera)");
         });
+    }
+
+    pub fn hello_world(&mut self) -> &mut Self {
+        let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
+        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
+        let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
+
+        let mut objects = Vec::new();
+
+        let ground_tex =
+            Rc::new(Texture::from_file("assets/textures/ground.jpg").set_mirrored_repeat());
+        let cactus_tex = Rc::new(Texture::from_file("assets/textures/cactus.jpg"));
+
+        // Podłoże
+        let ground_model = Matrix4::from_scale(1.0);
+        objects.push(
+            SceneObject::new(
+                ground_mesh.clone(),
+                ground_model,
+                Vector3::new(0.6, 0.6, 0.6),
+                Vector3::new(0.8, 0.8, 0.8),
+            )
+            .with_ground(true)
+            .with_texture(ground_tex.clone(), false),
+        );
+
+        // Drzewo – animacja koloru
+        let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
+        objects.push(
+            SceneObject::new(
+                tree_mesh.clone(),
+                tree_model,
+                Vector3::new(0.1, 0.5, 0.1),
+                Vector3::new(0.6, 0.8, 0.3),
+            )
+            .with_color_animation(1.0),
+        );
+
+        // Kaktus – statyczny
+        let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
+        objects.push(
+            SceneObject::new(
+                house_mesh.clone(),
+                house_model,
+                Vector3::new(1.0, 1.0, 1.0),
+                Vector3::new(1.0, 1.0, 1.0),
+            )
+            .with_texture(cactus_tex.clone(), false),
+        );
+
+        self.objects = objects;
+        self
     }
 }

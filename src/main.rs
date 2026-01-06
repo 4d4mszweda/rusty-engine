@@ -14,5 +14,5 @@ fn main() {
     //ex::hello_triangle::run(); // ex1
 
     let mut engine = engine::Engine::new(1280, 720, "Rust OBJ Scene");
-    engine.run();
+    engine.hello_world().run();
 }

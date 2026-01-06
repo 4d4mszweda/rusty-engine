@@ -14,6 +14,8 @@ use crate::scene_object::SceneObject;
 use crate::shader::Program;
 use crate::textures::Texture;
 
+// TODO gui
+
 pub struct Engine {
     glfw: glfw::Glfw,                           // CONTEXT
     window: glfw::Window,                       // WINDOW CONTEXT
@@ -25,9 +27,6 @@ pub struct Engine {
     last_time: f32,                             // JUST TIME
     gui: Gui,                                   // GUI CONTEXT
 }
-
-// TODO wywalić wszystko z konstruktura i zrobić aby wszystko było modyfikowalne z perspektywy gui
-// TODO obsługę UI wydzielić do nowego modułu
 
 impl Engine {
     pub fn new(width: u32, height: u32, title: &str) -> Self {

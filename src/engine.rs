@@ -102,7 +102,15 @@ impl Engine {
                 }
             }
 
-            // 3. Input kamery – możesz rozważyć:
+            if self.input.check_rmb_down() {
+                if self.input.rmb_down() {
+                    self.window.set_cursor_mode(glfw::CursorMode::Disabled);
+                } else {
+                    self.window.set_cursor_mode(glfw::CursorMode::Normal);
+                }
+                self.input.lock_rmb();
+            }
+
             self.input.setup_input(dt, now, &mut self.camera);
 
             let last_time = self.last_time;

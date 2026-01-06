@@ -1,4 +1,4 @@
-use crate::camera::{Camera, CameraAction};
+use crate::camera::{Camera, CameraAction, CameraMode};
 use glfw::{Action, Key, WindowEvent};
 use std::collections::HashMap;
 
@@ -23,6 +23,12 @@ pub struct Input {
     keys: HashMap<Key, KeyState>,
     scroll_y: f32,
     tap_time: f32,
+    // mouse look
+    prev_rmb_down: bool,
+    rmb_down: bool,
+    last_cursor: Option<(f32, f32)>,
+    mouse_dx: f32,
+    mouse_dy: f32,
 }
 
 impl Input {
@@ -31,6 +37,11 @@ impl Input {
             keys: HashMap::new(),
             scroll_y: 0.0,
             tap_time: 0.2,
+            rmb_down: false,
+            prev_rmb_down: false,
+            last_cursor: None,
+            mouse_dx: 0.0,
+            mouse_dy: 0.0,
         }
     }
 
@@ -49,6 +60,33 @@ impl Input {
             }
             WindowEvent::Scroll(_, y) => {
                 self.scroll_y += y as f32;
+            }
+            WindowEvent::MouseButton(glfw::MouseButton::Button2, Action::Press, _) => {
+                self.rmb_down = true;
+                self.last_cursor = None;
+                self.mouse_dx = 0.0;
+                self.mouse_dy = 0.0;
+            }
+
+            WindowEvent::MouseButton(glfw::MouseButton::Button2, Action::Release, _) => {
+                self.rmb_down = false;
+                self.last_cursor = None;
+                self.mouse_dx = 0.0;
+                self.mouse_dy = 0.0;
+            }
+            WindowEvent::CursorPos(x, y) => {
+                if !self.rmb_down {
+                    self.last_cursor = Some((x as f32, y as f32));
+                    return;
+                }
+
+                let (x, y) = (x as f32, y as f32);
+
+                if let Some((lx, ly)) = self.last_cursor {
+                    self.mouse_dx += x - lx;
+                    self.mouse_dy += y - ly;
+                }
+                self.last_cursor = Some((x, y));
             }
             _ => {}
         }
@@ -75,6 +113,26 @@ impl Input {
         let y = self.scroll_y;
         self.scroll_y = 0.0;
         y
+    }
+
+    pub fn check_rmb_down(&self) -> bool {
+        self.rmb_down != self.prev_rmb_down
+    }
+
+    pub fn rmb_down(&self) -> bool {
+        self.rmb_down
+    }
+
+    pub fn lock_rmb(&mut self) {
+        self.prev_rmb_down = self.rmb_down;
+    }
+
+    pub fn take_mouse_delta(&mut self) -> (f32, f32) {
+        let dx = self.mouse_dx;
+        let dy = self.mouse_dy;
+        self.mouse_dx = 0.0;
+        self.mouse_dy = 0.0;
+        (dx, dy)
     }
 
     pub fn setup_input(&mut self, dt: f32, now: f32, camera: &mut Camera) {
@@ -112,6 +170,16 @@ impl Input {
                 camera.input_event(dt, CameraAction::ZoomIn);
             } else if scroll < 0.0 {
                 camera.input_event(dt, CameraAction::ZoomOut);
+            }
+        }
+
+        if let CameraMode::Free = camera.mode {
+            if self.rmb_down() {
+                let (dx, dy) = self.take_mouse_delta();
+                let sens = 0.002;
+                camera.free_look(dx * sens, -dy * sens);
+            } else {
+                self.take_mouse_delta();
             }
         }
     }

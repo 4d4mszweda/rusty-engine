@@ -38,6 +38,7 @@ pub struct Camera {
     pub world_up: Vector3<f32>,
 }
 
+#[allow(dead_code)]
 impl Camera {
     pub fn new_orbit(target: Point3<f32>, radius: f32, theta: f32, phi: f32) -> Self {
         Self {
@@ -100,10 +101,6 @@ impl Camera {
 
     pub fn set_target(&mut self, target: Point3<f32>) {
         self.target = target;
-    }
-
-    pub fn set_mode(&mut self, mode: CameraMode) {
-        self.mode = mode;
     }
 
     pub fn toggle_mode(&mut self) {

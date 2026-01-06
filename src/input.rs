@@ -1,48 +1,113 @@
-use glfw::{Action, Key};
+use crate::camera::{Camera, CameraAction};
+use glfw::{Action, Key, WindowEvent};
+use std::collections::HashMap;
 
-use crate::camera::Camera;
+#[derive(Debug, Clone)]
+struct KeyState {
+    is_down: bool,
+    pressed_at: f32,
+    consumed: bool,
+}
 
-pub fn process_input(window: &mut glfw::Window, dt: f32, camera: &mut Camera) {
-    let rot_speed = 1.5;
-    let zoom_speed = 10.0;
+impl KeyState {
+    fn new() -> Self {
+        Self {
+            is_down: false,
+            pressed_at: 0.0,
+            consumed: false,
+        }
+    }
+}
 
-    // W/S – góra/dół
-    if window.get_key(Key::W) == Action::Press {
-        camera.theta -= rot_speed * dt;
-    }
-    if window.get_key(Key::S) == Action::Press {
-        camera.theta += rot_speed * dt;
-    }
+pub struct Input {
+    keys: HashMap<Key, KeyState>,
+    scroll_y: f32,
+    tap_time: f32,
+}
 
-    // A/D – obrót wokół sceny
-    if window.get_key(Key::A) == Action::Press {
-        camera.phi -= rot_speed * dt;
-    }
-    if window.get_key(Key::D) == Action::Press {
-        camera.phi += rot_speed * dt;
-    }
-
-    // + / - – zoom
-    if window.get_key(Key::Equal) == Action::Press {
-        camera.radius -= zoom_speed * dt;
-    }
-    if window.get_key(Key::Minus) == Action::Press {
-        camera.radius += zoom_speed * dt;
-    }
-
-    // ograniczenia kamery
-    if camera.radius < 3.0 {
-        camera.radius = 3.0;
-    }
-    if camera.radius > 50.0 {
-        camera.radius = 50.0;
+impl Input {
+    pub fn new() -> Self {
+        Self {
+            keys: HashMap::new(),
+            scroll_y: 0.0,
+            tap_time: 0.2,
+        }
     }
 
-    let eps = 0.1;
-    if camera.theta < eps {
-        camera.theta = eps;
+    /// Eventy GLFW (tu zapisujemy czasy)
+    pub fn on_event(&mut self, event: &WindowEvent, now: f32) {
+        match *event {
+            WindowEvent::Key(key, _, Action::Press, _) => {
+                let ks = self.keys.entry(key).or_insert_with(KeyState::new);
+                ks.is_down = true;
+                ks.pressed_at = now;
+                ks.consumed = false;
+            }
+            WindowEvent::Key(key, _, Action::Release, _) => {
+                if let Some(ks) = self.keys.get_mut(&key) {
+                    ks.is_down = false;
+                }
+            }
+            WindowEvent::Scroll(_, y) => {
+                self.scroll_y += y as f32;
+            }
+            _ => {}
+        }
     }
-    if camera.theta > std::f32::consts::PI - eps {
-        camera.theta = std::f32::consts::PI - eps;
+
+    pub fn tap(&mut self, key: Key, now: f32) -> bool {
+        if let Some(ks) = self.keys.get_mut(&key) {
+            if ks.is_down && !ks.consumed {
+                let held = now - ks.pressed_at;
+                if held <= self.tap_time {
+                    ks.consumed = true;
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn hold(&self, key: Key) -> bool {
+        self.keys.get(&key).map_or(false, |k| k.is_down)
+    }
+
+    pub fn take_scroll(&mut self) -> f32 {
+        let y = self.scroll_y;
+        self.scroll_y = 0.0;
+        y
+    }
+}
+
+pub fn handle_camera_input(input: &mut Input, dt: f32, now: f32, camera: &mut Camera) {
+    if input.hold(Key::W) {
+        camera.input_event(dt, CameraAction::W);
+    }
+    if input.hold(Key::S) {
+        camera.input_event(dt, CameraAction::S);
+    }
+    if input.hold(Key::A) {
+        camera.input_event(dt, CameraAction::A);
+    }
+    if input.hold(Key::D) {
+        camera.input_event(dt, CameraAction::D);
+    }
+
+    if input.tap(Key::M, now) {
+        camera.input_event(dt, CameraAction::ToggleMode);
+    }
+
+    if input.hold(Key::Equal) {
+        camera.input_event(dt, CameraAction::ZoomIn);
+    }
+    if input.hold(Key::Minus) {
+        camera.input_event(dt, CameraAction::ZoomOut);
+    }
+
+    let scroll = input.take_scroll();
+    if scroll > 0.0 {
+        camera.input_event(dt, CameraAction::ZoomIn);
+    } else if scroll < 0.0 {
+        camera.input_event(dt, CameraAction::ZoomOut);
     }
 }

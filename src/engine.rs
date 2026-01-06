@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Vector3};
+use cgmath::{Matrix4, Point3, Vector3};
 use egui_glow::glow;
 use glfw::{Action, Context, Key};
 use std::rc::Rc;
@@ -8,6 +8,7 @@ use std::sync::mpsc::Receiver;
 use crate::camera::Camera;
 use crate::glcontext;
 use crate::gui::Gui;
+use crate::input;
 use crate::mesh::Mesh;
 use crate::scene_object::SceneObject;
 use crate::shader::Program;
@@ -17,6 +18,7 @@ pub struct Engine {
     glfw: glfw::Glfw,                           // CONTEXT
     window: glfw::Window,                       // WINDOW CONTEXT
     events: Receiver<(f64, glfw::WindowEvent)>, // KEYMAPS EVENTS
+    input: input::Input,                        // INPUT
     program: Program,                           // SHADERS
     objects: Vec<SceneObject>,                  // OBJECTS ON THE SCENE
     camera: Camera,                             // CAMERA
@@ -25,6 +27,7 @@ pub struct Engine {
 }
 
 // TODO wywalić wszystko z konstruktura i zrobić aby wszystko było modyfikowalne z perspektywy gui
+// TODO obsługę UI wydzielić do nowego modułu
 
 impl Engine {
     pub fn new(width: u32, height: u32, title: &str) -> Self {
@@ -51,7 +54,19 @@ impl Engine {
         let last_time = glfw.get_time() as f32;
 
         // CAMERA
-        let camera = Camera::new(12.0, 0.5, 0.8);
+        let camera = Camera::new_orbit(
+            Point3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            12.0,
+            0.5,
+            0.8,
+        );
+
+        // INPUT
+        let input = input::Input::new();
 
         Engine {
             glfw,
@@ -60,6 +75,7 @@ impl Engine {
             program,
             objects: Vec::new(),
             camera,
+            input,
             last_time,
             gui,
         }
@@ -76,29 +92,24 @@ impl Engine {
             // 1. Nowa klatka egui
             self.gui.begin_frame();
 
-            // 2. Obsługa eventów z glfw
-            for (_, event) in glfw::flush_messages(&self.events) {
-                // przekazujemy do egui
-                self.gui.on_glfw_event(&self.window, &event);
+            let now = current_time;
 
-                // równolegle logika silnika (ESC itd.)
-                match event {
-                    glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-                        self.window.set_should_close(true);
-                    }
-                    _ => {}
+            for (_, event) in glfw::flush_messages(&self.events) {
+                self.input.on_event(&event, now);
+
+                if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
+                    self.window.set_should_close(true);
                 }
             }
 
             // 3. Input kamery – możesz rozważyć:
-            //    jeśli gui.ctx().wants_pointer_input() => nie ruszaj kamery
-            self.handle_input(dt);
+            self.handle_input(dt, now);
 
             let last_time = self.last_time;
             let objects_count = self.objects.len();
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::build_ui(ctx, last_time, objects_count);
+                Engine::print_ui(ctx, last_time, objects_count);
             });
 
             self.render(current_time);
@@ -111,18 +122,16 @@ impl Engine {
         }
     }
 
-    fn handle_input(&mut self, dt: f32) {
-        crate::input::process_input(&mut self.window, dt, &mut self.camera);
+    fn handle_input(&mut self, dt: f32, now: f32) {
+        input::handle_camera_input(&mut self.input, dt, now, &mut self.camera);
     }
 
     fn render(&mut self, time: f32) {
         unsafe {
-            // Przywróć stan dla 3D
             gl::Enable(gl::DEPTH_TEST);
             gl::DepthMask(gl::TRUE);
             gl::Disable(gl::BLEND);
             gl::DepthFunc(gl::LESS);
-
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
@@ -138,7 +147,7 @@ impl Engine {
     }
 
     // TEMP
-    fn build_ui(ctx: &egui::Context, last_time: f32, objects_count: usize) {
+    fn print_ui(ctx: &egui::Context, last_time: f32, objects_count: usize) {
         egui::Window::new("Debug").show(ctx, |ui| {
             ui.label(format!("Time: {:.2}", last_time));
             ui.label(format!("Objects: {}", objects_count));

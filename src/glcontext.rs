@@ -21,7 +21,7 @@ pub fn create_window(
     let (mut window, events) = glfw
         .create_window(width, height, title, WindowMode::Windowed)
         .expect("Failed to create GLFW window");
-    window.set_key_polling(true);
+    window.set_all_polling(true);
     (window, events)
 }
 

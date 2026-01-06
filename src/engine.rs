@@ -103,7 +103,7 @@ impl Engine {
             }
 
             // 3. Input kamery – możesz rozważyć:
-            self.handle_input(dt, now);
+            self.input.setup_input(dt, now, &mut self.camera);
 
             let last_time = self.last_time;
             let objects_count = self.objects.len();
@@ -120,10 +120,6 @@ impl Engine {
             // 7. Swap buffers
             self.window.swap_buffers();
         }
-    }
-
-    fn handle_input(&mut self, dt: f32, now: f32) {
-        input::handle_camera_input(&mut self.input, dt, now, &mut self.camera);
     }
 
     fn render(&mut self, time: f32) {

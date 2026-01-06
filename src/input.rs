@@ -34,7 +34,6 @@ impl Input {
         }
     }
 
-    /// Eventy GLFW (tu zapisujemy czasy)
     pub fn on_event(&mut self, event: &WindowEvent, now: f32) {
         match *event {
             WindowEvent::Key(key, _, Action::Press, _) => {
@@ -77,37 +76,43 @@ impl Input {
         self.scroll_y = 0.0;
         y
     }
-}
 
-pub fn handle_camera_input(input: &mut Input, dt: f32, now: f32, camera: &mut Camera) {
-    if input.hold(Key::W) {
-        camera.input_event(dt, CameraAction::W);
-    }
-    if input.hold(Key::S) {
-        camera.input_event(dt, CameraAction::S);
-    }
-    if input.hold(Key::A) {
-        camera.input_event(dt, CameraAction::A);
-    }
-    if input.hold(Key::D) {
-        camera.input_event(dt, CameraAction::D);
-    }
+    pub fn setup_input(&mut self, dt: f32, now: f32, camera: &mut Camera) {
+        if self.hold(Key::W) {
+            camera.input_event(dt, CameraAction::W);
+        }
+        if self.hold(Key::S) {
+            camera.input_event(dt, CameraAction::S);
+        }
+        if self.hold(Key::A) {
+            camera.input_event(dt, CameraAction::A);
+        }
+        if self.hold(Key::D) {
+            camera.input_event(dt, CameraAction::D);
+        }
 
-    if input.tap(Key::M, now) {
-        camera.input_event(dt, CameraAction::ToggleMode);
-    }
+        if self.tap(Key::M, now) {
+            camera.input_event(dt, CameraAction::ToggleMode);
+        }
 
-    if input.hold(Key::Equal) {
-        camera.input_event(dt, CameraAction::ZoomIn);
-    }
-    if input.hold(Key::Minus) {
-        camera.input_event(dt, CameraAction::ZoomOut);
-    }
+        if self.hold(Key::Equal) {
+            camera.input_event(dt, CameraAction::ZoomIn);
+        }
+        if self.hold(Key::Minus) {
+            camera.input_event(dt, CameraAction::ZoomOut);
+        }
 
-    let scroll = input.take_scroll();
-    if scroll > 0.0 {
-        camera.input_event(dt, CameraAction::ZoomIn);
-    } else if scroll < 0.0 {
-        camera.input_event(dt, CameraAction::ZoomOut);
+        let scroll = self.take_scroll();
+
+        let sensitivity = 3.0;
+        let steps = (scroll.abs() * sensitivity).round() as i32;
+
+        for _ in 0..steps {
+            if scroll > 0.0 {
+                camera.input_event(dt, CameraAction::ZoomIn);
+            } else if scroll < 0.0 {
+                camera.input_event(dt, CameraAction::ZoomOut);
+            }
+        }
     }
 }

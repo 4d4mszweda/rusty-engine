@@ -93,13 +93,17 @@ impl Engine {
 
             let now = current_time;
 
-            for (_, event) in glfw::flush_messages(&self.events) {
-                self.input.on_event(&event, now);
+            self.gui.begin_frame();
 
+            for (_, event) in glfw::flush_messages(&self.events) {
+                self.gui.on_glfw_event(&self.window, &event);
+                self.input.on_event(&event, now);
                 if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
                     self.window.set_should_close(true);
                 }
             }
+
+            let wants_pointer = self.gui.context().wants_pointer_input();
 
             if self.input.check_rmb_down() {
                 if self.input.rmb_down() {
@@ -110,13 +114,17 @@ impl Engine {
                 self.input.lock_rmb();
             }
 
-            self.input.setup_input(dt, now, &mut self.camera);
+            if !wants_pointer {
+                self.input.setup_input(dt, now, &mut self.camera);
+            } else {
+                self.input.take_mouse_delta();
+                self.input.take_scroll();
+            }
 
-            let last_time = self.last_time;
             let objects_count = self.objects.len();
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::print_ui(ctx, last_time, objects_count);
+                Engine::print_ui(ctx, objects_count);
             });
 
             self.render(current_time);
@@ -150,9 +158,8 @@ impl Engine {
     }
 
     // TEMP
-    fn print_ui(ctx: &egui::Context, last_time: f32, objects_count: usize) {
+    fn print_ui(ctx: &egui::Context, objects_count: usize) {
         egui::Window::new("Debug").show(ctx, |ui| {
-            ui.label(format!("Time: {:.2}", last_time));
             ui.label(format!("Objects: {}", objects_count));
         });
 

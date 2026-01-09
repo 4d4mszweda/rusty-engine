@@ -42,7 +42,10 @@ impl Gui {
 
         match *event {
             CursorPos(x, y) => {
-                let pos = Pos2::new(x as f32, y as f32);
+                let (sx, _sy) = window.get_content_scale();
+                let ppp = sx as f32;
+
+                let pos = Pos2::new((x as f32) / ppp, (y as f32) / ppp);
                 self.pointer_pos = Some(pos);
                 self.events.push(Event::PointerMoved(pos));
             }
@@ -74,11 +77,13 @@ impl Gui {
                 }
             }
             Scroll(x, y) => {
-                let modifiers = egui::Modifiers::default(); // lub z `mods`, jeśli przekazujesz
+                let (sx, _sy) = window.get_content_scale();
+                let ppp = sx as f32;
+
                 self.events.push(Event::MouseWheel {
                     unit: egui::MouseWheelUnit::Line,
-                    delta: vec2(x as f32, y as f32),
-                    modifiers,
+                    delta: vec2(x as f32, y as f32) / ppp,
+                    modifiers: egui::Modifiers::default(),
                 });
             }
             Char(c) => {

@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraMode};
 use crate::glcontext;
 use crate::gui::Gui;
 use crate::input;
@@ -122,17 +122,16 @@ impl Engine {
             }
 
             let objects_count = self.objects.len();
+            let camera = &mut self.camera;
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::print_ui(ctx, objects_count);
+                Engine::print_ui(ctx, camera, objects_count);
             });
 
             self.render(current_time);
 
-            // 6. Render egui na wierzchu
             self.gui.paint(&self.window, full_output);
 
-            // 7. Swap buffers
             self.window.swap_buffers();
         }
     }
@@ -158,14 +157,29 @@ impl Engine {
     }
 
     // TEMP
-    fn print_ui(ctx: &egui::Context, objects_count: usize) {
+    fn print_ui(ctx: &egui::Context, camera: &mut Camera, objects_count: usize) {
         egui::Window::new("Debug").show(ctx, |ui| {
             ui.label(format!("Objects: {}", objects_count));
         });
 
         egui::Window::new("Camera").show(ctx, |ui| {
-            ui.label("Tu sobie później dodasz suwaki do kamery");
-            ui.label("(np. radius/yaw/pitch, zależnie co masz w Camera)");
+            ui.label(format!("Mode: {:?}", camera.mode));
+
+            ui.label("Set mode:");
+            ui.horizontal(|ui| {
+                if ui
+                    .selectable_label(matches!(camera.mode, CameraMode::Orbit), "Orbit")
+                    .clicked()
+                {
+                    camera.mode = CameraMode::Orbit;
+                }
+                if ui
+                    .selectable_label(matches!(camera.mode, CameraMode::Free), "Free")
+                    .clicked()
+                {
+                    camera.mode = CameraMode::Free;
+                }
+            });
         });
     }
 

@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 
 use crate::camera::{Camera, CameraMode};
+use crate::debug;
 use crate::glcontext;
 use crate::gui::Gui;
 use crate::input;
@@ -67,6 +68,10 @@ impl Engine {
         // INPUT
         let input = input::Input::new();
 
+        unsafe {
+            debug::gl_check_errors(file!(), line!(), "after init");
+        }
+
         Engine {
             glfw,
             window,
@@ -92,8 +97,6 @@ impl Engine {
             self.gui.begin_frame();
 
             let now = current_time;
-
-            self.gui.begin_frame();
 
             for (_, event) in glfw::flush_messages(&self.events) {
                 self.gui.on_glfw_event(&self.window, &event);
@@ -153,6 +156,10 @@ impl Engine {
 
         for obj in &self.objects {
             obj.draw(&self.program, time, &view, &proj);
+        }
+
+        unsafe {
+            debug::gl_check_errors(file!(), line!(), "end of frame");
         }
     }
 

@@ -1,6 +1,7 @@
 // mod ex; //testing examples
 
 mod camera;
+mod debug;
 mod engine;
 mod glcontext;
 mod gui;

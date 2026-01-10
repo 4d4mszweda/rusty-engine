@@ -125,9 +125,10 @@ impl Engine {
 
             let objects_count = self.objects.len();
             let camera = &mut self.camera;
+            let prog = &mut self.program;
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::print_ui(ctx, camera, objects_count);
+                Engine::print_ui(ctx, camera, prog, objects_count);
             });
 
             self.render(current_time);
@@ -157,7 +158,7 @@ impl Engine {
 
         // --- lighting toggles (z egui) ---
         self.program
-            .set_int("u_useLighting", self.program.light.is_on);
+            .set_int("u_useLighting", self.program.light.is_on as i32);
         self.program.set_int(
             "u_specModel",
             match self.program.light.model {
@@ -192,7 +193,12 @@ impl Engine {
         }
     }
 
-    fn print_ui(ctx: &egui::Context, camera: &mut Camera, objects_count: usize) {
+    fn print_ui(
+        ctx: &egui::Context,
+        camera: &mut Camera,
+        program: &mut Program,
+        objects_count: usize,
+    ) {
         egui::Window::new("Debug").show(ctx, |ui| {
             ui.label(format!("Objects: {}", objects_count));
         });
@@ -200,6 +206,7 @@ impl Engine {
         egui::Window::new("Camera").show(ctx, |ui| {
             ui.label(format!("Mode: {:?}", camera.mode));
 
+            ui.separator();
             ui.label("Set mode:");
             ui.horizontal(|ui| {
                 if ui
@@ -216,8 +223,31 @@ impl Engine {
                 }
             });
         });
-    }
 
+        egui::Window::new("Światło").show(ctx, |ui| {
+            ui.checkbox(&mut program.light.is_on, "Włącz oświetlenie");
+
+            ui.separator();
+            ui.label("Model specular:");
+            ui.horizontal(|ui| {
+                if ui
+                    .selectable_label(matches!(program.light.model, SpecModel::Phong), "Phong")
+                    .clicked()
+                {
+                    program.light.model = SpecModel::Phong;
+                }
+                if ui
+                    .selectable_label(
+                        matches!(program.light.model, SpecModel::BlinnPhong),
+                        "Blinn-Phong",
+                    )
+                    .clicked()
+                {
+                    program.light.model = SpecModel::BlinnPhong;
+                }
+            });
+        });
+    }
     pub fn hello_world(&mut self) -> &mut Self {
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
         let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));

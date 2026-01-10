@@ -12,7 +12,7 @@ pub struct Program {
 }
 
 pub struct Light {
-    pub is_on: i32,
+    pub is_on: bool,
     pub model: SpecModel,
 }
 
@@ -56,7 +56,7 @@ impl Program {
             Program {
                 id: program_id,
                 light: Light {
-                    is_on: 1,
+                    is_on: true,
                     model: SpecModel::Phong,
                 },
             }

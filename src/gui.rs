@@ -41,11 +41,17 @@ impl Gui {
         use glfw::{Action, Modifiers, MouseButton};
 
         match *event {
-            CursorPos(x, y) => {
-                let (sx, _sy) = window.get_content_scale();
-                let ppp = sx as f32;
+            // CursorPos(x, y) => {
+            //     let (sx, _sy) = window.get_content_scale();
+            //     let ppp = sx as f32;
 
-                let pos = Pos2::new((x as f32) / ppp, (y as f32) / ppp);
+            //     let pos = Pos2::new((x as f32) / ppp, (y as f32) / ppp);
+            //     self.pointer_pos = Some(pos);
+            //     self.events.push(Event::PointerMoved(pos));
+            // }
+            CursorPos(x, y) => {
+                // GLFW CursorPos jest zwykle w "points" (logical), egui też tego oczekuje:
+                let pos = Pos2::new(x as f32, y as f32);
                 self.pointer_pos = Some(pos);
                 self.events.push(Event::PointerMoved(pos));
             }
@@ -98,19 +104,41 @@ impl Gui {
         }
     }
 
+    // pub fn run<F>(&mut self, window: &glfw::Window, time: f64, build_ui: F) -> egui::FullOutput
+    // where
+    //     F: FnMut(&EguiContext),
+    // {
+    //     let (width, height) = window.get_framebuffer_size();
+    //     let width = width.max(1) as f32;
+    //     let height = height.max(1) as f32;
+
+    //     let raw_input = egui::RawInput {
+    //         screen_rect: Some(Rect::from_min_size(
+    //             Pos2::new(0.0, 0.0),
+    //             vec2(width, height),
+    //         )),
+    //         time: Some(time),
+    //         events: std::mem::take(&mut self.events),
+    //         ..Default::default()
+    //     };
+
+    //     self.ctx.run(raw_input, build_ui)
+    // }
     pub fn run<F>(&mut self, window: &glfw::Window, time: f64, build_ui: F) -> egui::FullOutput
     where
         F: FnMut(&EguiContext),
     {
-        let (width, height) = window.get_size();
-        let width = width.max(1) as f32;
-        let height = height.max(1) as f32;
+        // DPI
+        let (sx, _sy) = window.get_content_scale();
+        self.ctx.set_pixels_per_point(sx as f32);
+
+        // logical size (points)
+        let (w, h) = window.get_size();
+        let w = w.max(1) as f32;
+        let h = h.max(1) as f32;
 
         let raw_input = egui::RawInput {
-            screen_rect: Some(Rect::from_min_size(
-                Pos2::new(0.0, 0.0),
-                vec2(width, height),
-            )),
+            screen_rect: Some(Rect::from_min_size(Pos2::new(0.0, 0.0), vec2(w, h))),
             time: Some(time),
             events: std::mem::take(&mut self.events),
             ..Default::default()
@@ -120,7 +148,7 @@ impl Gui {
     }
 
     pub fn paint(&mut self, window: &glfw::Window, full_output: egui::FullOutput) {
-        let (width, height) = window.get_size();
+        let (width, height) = window.get_framebuffer_size();
         let width = width.max(1) as f32;
         let height = height.max(1) as f32;
 

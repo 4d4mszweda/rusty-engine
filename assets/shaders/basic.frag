@@ -5,8 +5,7 @@ in vec3 v_world_pos;
 in vec2 v_tex;
 
 // Twoje dotychczasowe
-uniform vec3 u_color1;
-uniform vec3 u_color2;
+uniform vec3 u_color;
 uniform int u_is_ground;
 
 uniform sampler2D u_diffuse;
@@ -54,7 +53,7 @@ void main() {
         t = N.y * 0.5 + 0.5;
     }
 
-    vec3 base_color = mix(u_color1, u_color2, t);
+    vec3 base_color = u_color;
 
     if (u_use_texture == 1) {
         vec4 texColor = texture(u_diffuse, v_tex);

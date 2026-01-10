@@ -9,8 +9,7 @@ use crate::textures::Texture;
 pub struct SceneObject {
     pub mesh: Rc<Mesh>,
     pub base_model: Matrix4<f32>,
-    pub base_color1: Vector3<f32>,
-    pub base_color2: Vector3<f32>,
+    pub base_color: Vector3<f32>,
 
     // ANIMACJE
     pub animate_rotation: bool,
@@ -27,17 +26,11 @@ pub struct SceneObject {
 }
 
 impl SceneObject {
-    pub fn new(
-        mesh: Rc<Mesh>,
-        base_model: Matrix4<f32>,
-        base_color1: Vector3<f32>,
-        base_color2: Vector3<f32>,
-    ) -> Self {
+    pub fn new(mesh: Rc<Mesh>, base_model: Matrix4<f32>, base_color: Vector3<f32>) -> Self {
         SceneObject {
             mesh,
             base_model,
-            base_color1,
-            base_color2,
+            base_color,
             animate_rotation: false,
             animate_color: false,
             rotation_axis: Vector3::new(0.0, 1.0, 0.0),
@@ -85,20 +78,10 @@ impl SceneObject {
             model = model * rot;
         }
 
-        let mut c1 = self.base_color1;
-        let mut c2 = self.base_color2;
-
-        if self.animate_color {
-            let t = (time * self.color_speed).sin() * 0.5 + 0.5;
-            c1 = self.base_color1 * (1.0 - t) + self.base_color2 * t;
-            c2 = self.base_color2 * (1.0 - t) + self.base_color1 * t;
-        }
-
         program.set_mat4("u_model", &model);
         program.set_mat4("u_view", view);
         program.set_mat4("u_proj", proj);
-        program.set_vec3("u_color1", &c1);
-        program.set_vec3("u_color2", &c2);
+        program.set_vec3("u_color", &self.base_color);
         program.set_int("u_is_ground", if self.is_ground { 1 } else { 0 });
         program.set_vec3("u_material.Ambient", &cgmath::Vector3::new(0.2, 0.2, 0.2));
         program.set_vec3("u_material.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));

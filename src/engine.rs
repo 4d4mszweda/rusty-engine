@@ -266,28 +266,17 @@ impl Engine {
                 ground_mesh.clone(),
                 ground_model,
                 Vector3::new(0.6, 0.6, 0.6),
-                Vector3::new(0.8, 0.8, 0.8),
             )
             .with_ground(true)
             .with_texture(ground_tex.clone(), false),
         );
         objects.push(
-            SceneObject::new(
-                tree_mesh.clone(),
-                tree_model,
-                Vector3::new(0.1, 0.5, 0.1),
-                Vector3::new(0.6, 0.8, 0.3),
-            )
-            .with_color_animation(1.0),
+            SceneObject::new(tree_mesh.clone(), tree_model, Vector3::new(0.1, 0.5, 0.1))
+                .with_color_animation(1.0),
         );
         objects.push(
-            SceneObject::new(
-                house_mesh.clone(),
-                house_model,
-                Vector3::new(1.0, 1.0, 1.0),
-                Vector3::new(1.0, 1.0, 1.0),
-            )
-            .with_texture(cactus_tex.clone(), false),
+            SceneObject::new(house_mesh.clone(), house_model, Vector3::new(1.0, 1.0, 1.0))
+                .with_texture(cactus_tex.clone(), false),
         );
 
         self.objects = objects;

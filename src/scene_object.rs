@@ -100,6 +100,10 @@ impl SceneObject {
         program.set_vec3("u_color1", &c1);
         program.set_vec3("u_color2", &c2);
         program.set_int("u_is_ground", if self.is_ground { 1 } else { 0 });
+        program.set_vec3("u_material.Ambient", &cgmath::Vector3::new(0.2, 0.2, 0.2));
+        program.set_vec3("u_material.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));
+        program.set_vec3("u_material.Specular", &cgmath::Vector3::new(0.5, 0.5, 0.5));
+        program.set_float("u_material.Shininess", 32.0);
 
         if let Some(tex) = &self.texture {
             tex.bind(0);

@@ -8,6 +8,17 @@ use cgmath::prelude::*;
 
 pub struct Program {
     pub id: u32,
+    pub light: Light,
+}
+
+pub struct Light {
+    pub is_on: i32,
+    pub model: SpecModel,
+}
+
+pub enum SpecModel {
+    Phong,
+    BlinnPhong,
 }
 
 impl Program {
@@ -42,7 +53,13 @@ impl Program {
             gl::DeleteShader(vertex_shader);
             gl::DeleteShader(fragment_shader);
 
-            Program { id: program_id }
+            Program {
+                id: program_id,
+                light: Light {
+                    is_on: 1,
+                    model: SpecModel::Phong,
+                },
+            }
         }
     }
 
@@ -104,6 +121,7 @@ impl Program {
     pub fn set_vec3(&self, name: &str, v: &cgmath::Vector3<f32>) {
         let loc = self.get_uniform_location(name);
         if loc < 0 {
+            eprintln!("WARN uniform not found: {}", name);
             return;
         }
         unsafe {

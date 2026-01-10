@@ -12,7 +12,7 @@ use crate::gui::Gui;
 use crate::input;
 use crate::mesh::Mesh;
 use crate::scene_object::SceneObject;
-use crate::shader::Program;
+use crate::shader::{Program, SpecModel};
 use crate::textures::Texture;
 
 // TODO gui
@@ -93,7 +93,6 @@ impl Engine {
 
             self.glfw.poll_events();
 
-            // 1. Nowa klatka egui
             self.gui.begin_frame();
 
             let now = current_time;
@@ -148,6 +147,36 @@ impl Engine {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
+        self.program.use_program();
+        // --- CAMERA POS (MUSI być co klatkę) ---
+        let cam_pos = self.camera.eye_position();
+        self.program.set_vec3(
+            "u_cameraPos",
+            &cgmath::Vector3::new(cam_pos.x, cam_pos.y, cam_pos.z),
+        );
+
+        // --- lighting toggles (z egui) ---
+        self.program
+            .set_int("u_useLighting", self.program.light.is_on);
+        self.program.set_int(
+            "u_specModel",
+            match self.program.light.model {
+                SpecModel::Phong => 0,
+                SpecModel::BlinnPhong => 1,
+            },
+        );
+        // --- światło (też logicznie per frame) ---
+        self.program
+            .set_vec3("u_light.Position", &cgmath::Vector3::new(2.0, 3.0, 1.0));
+        self.program
+            .set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.1, 0.1, 0.1));
+        self.program
+            .set_vec3("u_light.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));
+        self.program
+            .set_vec3("u_light.Specular", &cgmath::Vector3::new(1.0, 1.0, 1.0));
+        self.program
+            .set_vec3("u_light.Attenuation", &cgmath::Vector3::new(1.0, 0.0, 0.0));
+
         let (width, height) = self.window.get_size();
         let aspect = width as f32 / height as f32;
 
@@ -163,7 +192,6 @@ impl Engine {
         }
     }
 
-    // TEMP
     fn print_ui(ctx: &egui::Context, camera: &mut Camera, objects_count: usize) {
         egui::Window::new("Debug").show(ctx, |ui| {
             ui.label(format!("Objects: {}", objects_count));

@@ -164,6 +164,23 @@ impl Camera {
         self.position += r * right;
         self.position += u * up;
     }
+    /// Zwraca pozycję kamery w world space (potrzebne do specular)
+    pub fn eye_position(&self) -> cgmath::Point3<f32> {
+        match self.mode {
+            CameraMode::Orbit => {
+                // To jest dokładnie to samo co w view_matrix()
+                let x = self.radius * self.theta.sin() * self.phi.cos();
+                let y = self.radius * self.theta.cos();
+                let z = self.radius * self.theta.sin() * self.phi.sin();
+
+                cgmath::Point3::new(self.target.x + x, self.target.y + y, self.target.z + z)
+            }
+            CameraMode::Free => {
+                // W Free kamera fizycznie stoi w `position`
+                self.position
+            }
+        }
+    }
 }
 
 fn orbit_eye(target: Point3<f32>, r: f32, theta: f32, phi: f32) -> Point3<f32> {

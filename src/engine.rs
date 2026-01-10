@@ -149,14 +149,12 @@ impl Engine {
         }
 
         self.program.use_program();
-        // --- CAMERA POS (MUSI być co klatkę) ---
+
         let cam_pos = self.camera.eye_position();
         self.program.set_vec3(
             "u_cameraPos",
             &cgmath::Vector3::new(cam_pos.x, cam_pos.y, cam_pos.z),
         );
-
-        // --- lighting toggles (z egui) ---
         self.program
             .set_int("u_useLighting", self.program.light.is_on as i32);
         self.program.set_int(
@@ -166,7 +164,6 @@ impl Engine {
                 SpecModel::BlinnPhong => 1,
             },
         );
-        // --- światło (też logicznie per frame) ---
         self.program
             .set_vec3("u_light.Position", &cgmath::Vector3::new(2.0, 3.0, 1.0));
         self.program
@@ -248,19 +245,22 @@ impl Engine {
             });
         });
     }
+
     pub fn hello_world(&mut self) -> &mut Self {
+        let mut objects = Vec::new();
+
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
         let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
         let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
-
-        let mut objects = Vec::new();
 
         let ground_tex =
             Rc::new(Texture::from_file("assets/textures/ground.jpg").set_mirrored_repeat());
         let cactus_tex = Rc::new(Texture::from_file("assets/textures/cactus.jpg"));
 
-        // Podłoże
         let ground_model = Matrix4::from_scale(1.0);
+        let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
+        let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
+
         objects.push(
             SceneObject::new(
                 ground_mesh.clone(),
@@ -271,9 +271,6 @@ impl Engine {
             .with_ground(true)
             .with_texture(ground_tex.clone(), false),
         );
-
-        // Drzewo – animacja koloru
-        let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
         objects.push(
             SceneObject::new(
                 tree_mesh.clone(),
@@ -283,9 +280,6 @@ impl Engine {
             )
             .with_color_animation(1.0),
         );
-
-        // Kaktus – statyczny
-        let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
         objects.push(
             SceneObject::new(
                 house_mesh.clone(),

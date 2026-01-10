@@ -167,7 +167,7 @@ impl Engine {
         self.program
             .set_vec3("u_light.Position", &cgmath::Vector3::new(2.0, 3.0, 1.0));
         self.program
-            .set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.1, 0.1, 0.1));
+            .set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.3, 0.3, 0.3));
         self.program
             .set_vec3("u_light.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));
         self.program
@@ -222,9 +222,11 @@ impl Engine {
         });
 
         egui::Window::new("Światło").show(ctx, |ui| {
+            ui.label("World");
             ui.checkbox(&mut program.light.is_on, "Włącz oświetlenie");
 
             ui.separator();
+            ui.label("Model:");
             ui.label("Model specular:");
             ui.horizontal(|ui| {
                 if ui
@@ -270,10 +272,11 @@ impl Engine {
             .with_ground(true)
             .with_texture(ground_tex.clone(), false),
         );
-        objects.push(
-            SceneObject::new(tree_mesh.clone(), tree_model, Vector3::new(0.1, 0.5, 0.1))
-                .with_color_animation(1.0),
-        );
+        objects.push(SceneObject::new(
+            tree_mesh.clone(),
+            tree_model,
+            Vector3::new(0.1, 0.5, 0.1),
+        ));
         objects.push(
             SceneObject::new(house_mesh.clone(), house_model, Vector3::new(1.0, 1.0, 1.0))
                 .with_texture(cactus_tex.clone(), false),

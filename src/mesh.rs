@@ -5,22 +5,28 @@ use std::ptr;
 
 use tobj;
 
+#[allow(dead_code)]
 pub struct Mesh {
     pub vao: u32,
     pub vbo: u32,
     pub vertex_count: i32,
 }
 
+#[allow(dead_code)]
 impl Mesh {
     pub fn from_obj<P: AsRef<Path>>(path: P) -> Mesh {
         let path_ref = path.as_ref();
         println!("Loading OBJ: {:?}", path_ref);
-        println!("CWD: {:?}", std::env::current_dir().unwrap());
-        println!("Trying to load: {:?}", path_ref);
-        println!("Exists? {}", path_ref.exists());
 
-        let (models, _materials) = tobj::load_obj(path_ref)
-            .unwrap_or_else(|e| panic!("Failed to load OBJ {:?}: {:?}", path_ref, e));
+        let (models, _materials) = tobj::load_obj(
+            path_ref,
+            &tobj::LoadOptions {
+                triangulate: true,
+                single_index: true,
+                ..Default::default()
+            },
+        )
+        .unwrap_or_else(|e| panic!("Failed to load OBJ {:?}: {:?}", path_ref, e));
 
         if models.is_empty() {
             panic!("OBJ file has no models!");

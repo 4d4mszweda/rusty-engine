@@ -11,7 +11,7 @@ use crate::glcontext;
 use crate::gui::Gui;
 use crate::input;
 use crate::mesh::Mesh;
-use crate::scene_object::SceneObject;
+use crate::scene_object::{Material, SceneObject};
 use crate::shader::{Program, SpecModel};
 use crate::textures::Texture;
 
@@ -262,7 +262,21 @@ impl Engine {
         let ground_model = Matrix4::from_scale(1.0);
         let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
         let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
+        let matte_model = Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, -3.0));
+        let glossy_model = Matrix4::from_translation(cgmath::Vector3::new(1.5, 0.0, -3.0));
 
+        objects.push(
+            SceneObject::new(house_mesh.clone(), matte_model, Vector3::new(0.8, 0.2, 0.2))
+                .with_material(Material::matte()),
+        );
+        objects.push(
+            SceneObject::new(
+                house_mesh.clone(),
+                glossy_model,
+                Vector3::new(0.2, 0.6, 0.9),
+            )
+            .with_material(Material::glossy()),
+        );
         objects.push(
             SceneObject::new(
                 ground_mesh.clone(),

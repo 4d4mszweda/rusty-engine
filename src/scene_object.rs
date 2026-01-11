@@ -120,3 +120,23 @@ impl Default for Material {
         }
     }
 }
+
+impl Material {
+    pub fn glossy() -> Self {
+        Self {
+            ambient: Vector3::new(0.25, 0.25, 0.25),
+            diffuse: Vector3::new(1.0, 1.0, 1.0),
+            specular: Vector3::new(1.0, 1.0, 1.0),
+            shininess: 128.0,
+        }
+    }
+
+    pub fn matte() -> Self {
+        Self {
+            ambient: Vector3::new(0.35, 0.35, 0.35),
+            diffuse: Vector3::new(1.0, 1.0, 1.0),
+            specular: Vector3::new(0.05, 0.05, 0.05),
+            shininess: 8.0,
+        }
+    }
+}

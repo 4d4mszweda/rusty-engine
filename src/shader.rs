@@ -14,6 +14,20 @@ pub struct Program {
 pub struct Light {
     pub is_on: bool,
     pub model: SpecModel,
+    pub light_type: LightType, // NEW
+
+    // TEMP
+    pub animate: bool,
+    pub orbit_center: cgmath::Vector3<f32>,
+    pub orbit_radius: f32,
+    pub orbit_speed: f32,
+    pub base_height: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LightType {
+    Point,
+    Directional,
 }
 
 pub enum SpecModel {
@@ -58,6 +72,13 @@ impl Program {
                 light: Light {
                     is_on: true,
                     model: SpecModel::Phong,
+                    light_type: LightType::Point,
+
+                    animate: false,
+                    orbit_center: cgmath::Vector3::new(0.0, 0.0, 0.0),
+                    orbit_radius: 4.0,
+                    orbit_speed: 1.0,
+                    base_height: 3.0,
                 },
             }
         }

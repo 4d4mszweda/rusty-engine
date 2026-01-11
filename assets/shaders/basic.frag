@@ -18,9 +18,12 @@ struct LightParam {
     vec3 Ambient;
     vec3 Diffuse;
     vec3 Specular;
-    vec3 Attenuation; // (x stała, y liniowa, z kwadratowa)
-    vec3 Position;    // world space
+    vec3 Attenuation; // point only
+    vec3 Position;    // point only
+    vec3 Direction;   // directional only (world space)
 };
+
+uniform int u_lightType; // 0 = point, 1 = directional
 
 struct MaterialParam {
     vec3 Ambient;
@@ -71,10 +74,20 @@ void main() {
         return;
     }
 
-    // --- Punktowe światło (world space) ---
-    vec3 Lvec = u_light.Position - v_world_pos;
-    float dist = length(Lvec);
-    vec3 L = normalize(Lvec);
+	vec3 L;
+	float latt = 1.0;
+
+	if (u_lightType == 0) {
+		// POINT
+		vec3 Lvec = u_light.Position - v_world_pos;
+		float dist = length(Lvec);
+		L = normalize(Lvec);
+		latt = attenuation(u_light.Attenuation, dist);
+	} else {
+		// DIRECTIONAL (promienie równoległe, bez zaniku)
+		L = normalize(-u_light.Direction);
+		latt = 1.0;
+	}
 
     // wektor do kamery
     vec3 E = normalize(u_cameraPos - v_world_pos);
@@ -95,8 +108,6 @@ void main() {
             spec = pow(max(dot(N, H), 0.0), u_material.Shininess);
         }
     }
-
-    float latt = attenuation(u_light.Attenuation, dist);
 
     // Współczynnik światła (ambient + atten*(diffuse + spec))
     vec3 ambientPart  = u_light.Ambient  * u_material.Ambient;

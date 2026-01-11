@@ -12,7 +12,7 @@ use crate::gui::Gui;
 use crate::input;
 use crate::mesh::Mesh;
 use crate::scene_object::{Material, SceneObject};
-use crate::shader::{Program, SpecModel};
+use crate::shader::{LightType, Program, SpecModel};
 use crate::textures::Texture;
 
 // TODO gui
@@ -164,8 +164,25 @@ impl Engine {
                 SpecModel::BlinnPhong => 1,
             },
         );
-        self.program
-            .set_vec3("u_light.Position", &cgmath::Vector3::new(2.0, 3.0, 1.0));
+        let light_pos = if self.program.light.animate {
+            let c = self.program.light.orbit_center;
+            let r = self.program.light.orbit_radius;
+            let w = self.program.light.orbit_speed;
+            let y = self.program.light.base_height;
+
+            cgmath::Vector3::new(c.x + r * (time * w).cos(), y, c.z + r * (time * w).sin())
+        } else {
+            cgmath::Vector3::new(2.0, 3.0, 1.0)
+        };
+
+        self.program.set_int(
+            "u_lightType",
+            match self.program.light.light_type {
+                LightType::Point => 0,
+                LightType::Directional => 1,
+            },
+        );
+        self.program.set_vec3("u_light.Position", &light_pos);
         self.program
             .set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.3, 0.3, 0.3));
         self.program
@@ -174,6 +191,8 @@ impl Engine {
             .set_vec3("u_light.Specular", &cgmath::Vector3::new(1.0, 1.0, 1.0));
         self.program
             .set_vec3("u_light.Attenuation", &cgmath::Vector3::new(1.0, 0.0, 0.0));
+        self.program
+            .set_vec3("u_light.Direction", &cgmath::Vector3::new(-1.0, -1.0, -0.3));
 
         let (width, height) = self.window.get_size();
         let aspect = width as f32 / height as f32;
@@ -224,9 +243,35 @@ impl Engine {
         egui::Window::new("Światło").show(ctx, |ui| {
             ui.label("World");
             ui.checkbox(&mut program.light.is_on, "Włącz oświetlenie");
+            ui.separator();
+            ui.label("Typ światła:");
+            ui.horizontal(|ui| {
+                if ui
+                    .selectable_label(program.light.light_type == LightType::Point, "Punktowe")
+                    .clicked()
+                {
+                    program.light.light_type = LightType::Point;
+                }
+
+                if ui
+                    .selectable_label(
+                        program.light.light_type == LightType::Directional,
+                        "Kierunkowe",
+                    )
+                    .clicked()
+                {
+                    program.light.light_type = LightType::Directional;
+                }
+            });
 
             ui.separator();
-            ui.label("Model:");
+            ui.checkbox(&mut program.light.animate, "Animuj światło (orbita)");
+
+            ui.add(egui::Slider::new(&mut program.light.orbit_radius, 0.5..=20.0).text("Promień"));
+            ui.add(egui::Slider::new(&mut program.light.orbit_speed, 0.0..=5.0).text("Szybkość"));
+            ui.add(egui::Slider::new(&mut program.light.base_height, 0.0..=10.0).text("Wysokość"));
+
+            ui.separator();
             ui.label("Model specular:");
             ui.horizontal(|ui| {
                 if ui

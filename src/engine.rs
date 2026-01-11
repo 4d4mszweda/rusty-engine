@@ -309,7 +309,16 @@ impl Engine {
         let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
         let matte_model = Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, -3.0));
         let glossy_model = Matrix4::from_translation(cgmath::Vector3::new(1.5, 0.0, -3.0));
+        let animated_model = Matrix4::from_translation(cgmath::Vector3::new(3.0, 0.0, -3.0));
 
+        objects.push(
+            SceneObject::new(
+                house_mesh.clone(),
+                animated_model,
+                Vector3::new(0.8, 0.5, 0.5),
+            )
+            .with_rotation(Vector3::new(0.0, 1.0, 0.0), 1.0),
+        );
         objects.push(
             SceneObject::new(house_mesh.clone(), matte_model, Vector3::new(0.8, 0.2, 0.2))
                 .with_material(Material::matte()),

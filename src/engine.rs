@@ -11,8 +11,9 @@ use crate::glcontext;
 use crate::gui::Gui;
 use crate::input;
 use crate::mesh::Mesh;
+use crate::program::Program;
+use crate::program::light::{LightType, SpecModel};
 use crate::scene_object::{Material, SceneObject};
-use crate::shader::{LightType, Program, SpecModel};
 use crate::textures::Texture;
 
 // TODO gui
@@ -149,57 +150,18 @@ impl Engine {
         }
 
         self.program.use_program();
-
+        // pass viewport to shader
         let cam_pos = self.camera.eye_position();
         self.program.set_vec3(
             "u_cameraPos",
             &cgmath::Vector3::new(cam_pos.x, cam_pos.y, cam_pos.z),
         );
-        self.program
-            .set_int("u_useLighting", self.program.light.is_on as i32);
-        self.program.set_int(
-            "u_specModel",
-            match self.program.light.model {
-                SpecModel::Phong => 0,
-                SpecModel::BlinnPhong => 1,
-            },
-        );
-        let light_pos = if self.program.light.animate {
-            let c = self.program.light.orbit_center;
-            let r = self.program.light.orbit_radius;
-            let w = self.program.light.orbit_speed;
-            let y = self.program.light.base_height;
 
-            cgmath::Vector3::new(c.x + r * (time * w).cos(), y, c.z + r * (time * w).sin())
-        } else {
-            cgmath::Vector3::new(2.0, 3.0, 1.0)
-        };
-
-        self.program.set_int(
-            "u_lightType",
-            match self.program.light.light_type {
-                LightType::Point => 0,
-                LightType::Directional => 1,
-            },
-        );
-        self.program.set_vec3("u_light.Position", &light_pos);
-        self.program
-            .set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.3, 0.3, 0.3));
-        self.program
-            .set_vec3("u_light.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));
-        self.program
-            .set_vec3("u_light.Specular", &cgmath::Vector3::new(1.0, 1.0, 1.0));
-        self.program
-            .set_vec3("u_light.Attenuation", &cgmath::Vector3::new(1.0, 0.0, 0.0));
-        self.program
-            .set_vec3("u_light.Direction", &cgmath::Vector3::new(-1.0, -1.0, -0.3));
-
+        // pass viewport to draw objects
         let (width, height) = self.window.get_size();
         let aspect = width as f32 / height as f32;
-
         let view = self.camera.view_matrix();
         let proj = self.camera.proj_matrix(aspect);
-
         for obj in &self.objects {
             obj.draw(&self.program, time, &view, &proj);
         }
@@ -240,54 +202,48 @@ impl Engine {
             });
         });
 
-        egui::Window::new("Światło").show(ctx, |ui| {
-            ui.label("World");
-            ui.checkbox(&mut program.light.is_on, "Włącz oświetlenie");
+        egui::Window::new("World light").show(ctx, |ui| {
+            ui.checkbox(&mut program.world_light.is_on, "Enable light");
             ui.separator();
-            ui.label("Typ światła:");
+            ui.label("Light Type:");
             ui.horizontal(|ui| {
                 if ui
-                    .selectable_label(program.light.light_type == LightType::Point, "Punktowe")
+                    .selectable_label(program.world_light.light_type == LightType::Point, "Point")
                     .clicked()
                 {
-                    program.light.light_type = LightType::Point;
+                    program.world_light.light_type = LightType::Point;
                 }
 
                 if ui
                     .selectable_label(
-                        program.light.light_type == LightType::Directional,
-                        "Kierunkowe",
+                        program.world_light.light_type == LightType::Directional,
+                        "Directional",
                     )
                     .clicked()
                 {
-                    program.light.light_type = LightType::Directional;
+                    program.world_light.light_type = LightType::Directional;
                 }
             });
-
             ui.separator();
-            ui.checkbox(&mut program.light.animate, "Animuj światło (orbita)");
-
-            ui.add(egui::Slider::new(&mut program.light.orbit_radius, 0.5..=20.0).text("Promień"));
-            ui.add(egui::Slider::new(&mut program.light.orbit_speed, 0.0..=5.0).text("Szybkość"));
-            ui.add(egui::Slider::new(&mut program.light.base_height, 0.0..=10.0).text("Wysokość"));
-
-            ui.separator();
-            ui.label("Model specular:");
+            ui.label("Specul marodel:");
             ui.horizontal(|ui| {
                 if ui
-                    .selectable_label(matches!(program.light.model, SpecModel::Phong), "Phong")
+                    .selectable_label(
+                        matches!(program.world_light.spec_model, SpecModel::Phong),
+                        "Phong",
+                    )
                     .clicked()
                 {
-                    program.light.model = SpecModel::Phong;
+                    program.world_light.spec_model = SpecModel::Phong;
                 }
                 if ui
                     .selectable_label(
-                        matches!(program.light.model, SpecModel::BlinnPhong),
+                        matches!(program.world_light.spec_model, SpecModel::BlinnPhong),
                         "Blinn-Phong",
                     )
                     .clicked()
                 {
-                    program.light.model = SpecModel::BlinnPhong;
+                    program.world_light.spec_model = SpecModel::BlinnPhong;
                 }
             });
         });

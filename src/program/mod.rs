@@ -1,38 +1,17 @@
+//! everything to interact with shaders
+
+pub mod light;
+
 use std::ffi::CString;
 use std::fs;
 use std::path::Path;
 use std::ptr;
 
-use cgmath::Matrix4;
-use cgmath::prelude::*;
+use cgmath::{Matrix, Matrix4};
 
 pub struct Program {
     pub id: u32,
-    pub light: Light,
-}
-
-pub struct Light {
-    pub is_on: bool,
-    pub model: SpecModel,
-    pub light_type: LightType, // NEW
-
-    // TEMP
-    pub animate: bool,
-    pub orbit_center: cgmath::Vector3<f32>,
-    pub orbit_radius: f32,
-    pub orbit_speed: f32,
-    pub base_height: f32,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LightType {
-    Point,
-    Directional,
-}
-
-pub enum SpecModel {
-    Phong,
-    BlinnPhong,
+    pub world_light: light::WorldLight,
 }
 
 impl Program {
@@ -69,16 +48,10 @@ impl Program {
 
             Program {
                 id: program_id,
-                light: Light {
+                world_light: light::WorldLight {
                     is_on: true,
-                    model: SpecModel::Phong,
-                    light_type: LightType::Point,
-
-                    animate: false,
-                    orbit_center: cgmath::Vector3::new(0.0, 0.0, 0.0),
-                    orbit_radius: 4.0,
-                    orbit_speed: 1.0,
-                    base_height: 3.0,
+                    spec_model: light::SpecModel::Phong,
+                    light_type: light::LightType::Point,
                 },
             }
         }
@@ -122,6 +95,27 @@ impl Program {
         unsafe {
             gl::UseProgram(self.id);
         }
+        self.set_int("u_useLighting", self.world_light.is_on as i32);
+        self.set_int(
+            "u_specModel",
+            match self.world_light.spec_model {
+                light::SpecModel::Phong => 0,
+                light::SpecModel::BlinnPhong => 1,
+            },
+        );
+        self.set_int(
+            "u_lightType",
+            match self.world_light.light_type {
+                light::LightType::Point => 0,
+                light::LightType::Directional => 1,
+            },
+        );
+        self.set_vec3("u_light.Position", &cgmath::Vector3::new(2.0, 3.0, 1.0));
+        self.set_vec3("u_light.Ambient", &cgmath::Vector3::new(0.3, 0.3, 0.3));
+        self.set_vec3("u_light.Diffuse", &cgmath::Vector3::new(1.0, 1.0, 1.0));
+        self.set_vec3("u_light.Specular", &cgmath::Vector3::new(1.0, 1.0, 1.0));
+        self.set_vec3("u_light.Attenuation", &cgmath::Vector3::new(1.0, 0.0, 0.0));
+        self.set_vec3("u_light.Direction", &cgmath::Vector3::new(-1.0, -1.0, -0.3));
     }
 
     pub fn get_uniform_location(&self, name: &str) -> i32 {

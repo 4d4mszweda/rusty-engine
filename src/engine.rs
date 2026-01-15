@@ -16,8 +16,6 @@ use crate::program::light::{LightType, SpecModel};
 use crate::scene_object::{Material, SceneObject};
 use crate::textures::Texture;
 
-// TODO gui
-
 pub struct Engine {
     glfw: glfw::Glfw,                           // CONTEXT
     window: glfw::Window,                       // WINDOW CONTEXT

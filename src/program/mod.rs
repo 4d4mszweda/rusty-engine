@@ -50,7 +50,7 @@ impl Program {
                 id: program_id,
                 world_light: light::WorldLight {
                     is_on: true,
-                    spec_model: light::SpecModel::Phong,
+                    spec_model: light::SpecModel::BlinnPhong,
                     light_type: light::LightType::Point,
                 },
             }

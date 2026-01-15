@@ -3,7 +3,7 @@ use std::rc::Rc;
 use cgmath::{InnerSpace, Matrix4, Rad, Vector3};
 
 use crate::mesh::Mesh;
-use crate::shader::Program;
+use crate::program::Program;
 use crate::textures::Texture;
 
 pub struct SceneObject {

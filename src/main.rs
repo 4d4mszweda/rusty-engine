@@ -7,8 +7,8 @@ mod glcontext;
 mod gui;
 mod input;
 mod mesh;
+mod program;
 mod scene_object;
-mod shader;
 mod textures;
 
 fn main() {

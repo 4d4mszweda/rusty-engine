@@ -55,6 +55,10 @@ impl SkyBox {
         })
     }
 
+    pub fn cubemap_id(&self) -> u32 {
+        self.cubemap
+    }
+
     pub fn draw(&self, view: &Matrix4<f32>, proj: &Matrix4<f32>) {
         unsafe {
             gl::DepthFunc(gl::LEQUAL);

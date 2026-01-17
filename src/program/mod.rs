@@ -12,6 +12,7 @@ use cgmath::{Matrix, Matrix4};
 pub struct Program {
     pub id: u32,
     pub world_light: light::WorldLight,
+    pub env_enabled: bool,
 }
 
 impl Program {
@@ -48,6 +49,7 @@ impl Program {
 
             Program {
                 id: program_id,
+                env_enabled: true,
                 world_light: light::WorldLight {
                     is_on: true,
                     spec_model: light::SpecModel::BlinnPhong,

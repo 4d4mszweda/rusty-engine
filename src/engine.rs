@@ -15,7 +15,7 @@ use crate::program::Program;
 use crate::program::light::{LightType, SpecModel};
 use crate::scene_object::leaf_system::LeafState;
 use crate::scene_object::sky_box::SkyBoxState;
-use crate::scene_object::{Material, SceneObject};
+use crate::scene_object::{EnvMode, Material, SceneObject};
 use crate::textures::Texture;
 
 pub struct Engine {
@@ -156,12 +156,20 @@ impl Engine {
         }
 
         self.program.use_program();
-        // pass viewport to shader
+
+        let sb = &self.skybox.skyboxes[self.skybox.skybox_selected];
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE1);
+            gl::BindTexture(gl::TEXTURE_CUBE_MAP, sb.cubemap_id());
+        }
+        self.program.set_int("u_skybox", 1);
         let cam_pos = self.camera.eye_position();
         self.program.set_vec3(
             "u_cameraPos",
             &cgmath::Vector3::new(cam_pos.x, cam_pos.y, cam_pos.z),
         );
+        self.program
+            .set_int("u_envEnabled", if self.program.env_enabled { 1 } else { 0 });
 
         // pass viewport to draw objects
         let (width, height) = self.window.get_size();
@@ -289,6 +297,9 @@ impl Engine {
                 leaf.leaf_system.respawn_many(count as usize, 1234);
             }
         });
+        egui::Window::new("Env map").show(ctx, |ui| {
+            ui.checkbox(&mut program.env_enabled, "Enable reflection/refraction");
+        });
     }
 
     pub fn hello_world(&mut self) -> &mut Self {
@@ -308,6 +319,8 @@ impl Engine {
         let matte_model = Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, -3.0));
         let glossy_model = Matrix4::from_translation(cgmath::Vector3::new(1.5, 0.0, -3.0));
         let animated_model = Matrix4::from_translation(cgmath::Vector3::new(3.0, 0.0, -3.0));
+        let test_model = Matrix4::from_translation(cgmath::Vector3::new(4.0, 0.0, -4.0));
+        let test2_model = Matrix4::from_translation(cgmath::Vector3::new(5.0, 0.0, -5.0));
 
         objects.push(
             SceneObject::new(
@@ -346,6 +359,20 @@ impl Engine {
         objects.push(
             SceneObject::new(house_mesh.clone(), house_model, Vector3::new(1.0, 1.0, 1.0))
                 .with_texture(cactus_tex.clone(), false),
+        );
+        objects.push(
+            SceneObject::new(house_mesh.clone(), test_model, Vector3::new(1.0, 1.0, 1.0))
+                .with_material(Material::glossy())
+                .with_env(EnvMode::Reflect, 0.85, 1.0 / 1.52)
+                .with_texture(cactus_tex.clone(), false)
+                .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
+        );
+        objects.push(
+            SceneObject::new(house_mesh.clone(), test2_model, Vector3::new(1.0, 1.0, 1.0))
+                .with_material(Material::matte())
+                .with_env(EnvMode::Refract, 0.85, 1.0 / 1.52)
+                .with_texture(cactus_tex.clone(), false)
+                .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
         );
 
         self.objects = objects;

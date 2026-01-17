@@ -4,7 +4,12 @@ in vec3 v_normal;
 in vec3 v_world_pos;
 in vec2 v_tex;
 
-// Twoje dotychczasowe
+uniform samplerCube u_skybox;
+uniform int u_envMode;
+uniform float u_envMix;
+uniform float u_refractEta;
+uniform int u_envEnabled; 
+
 uniform vec3 u_color;
 uniform int u_is_ground;
 
@@ -12,7 +17,6 @@ uniform sampler2D u_diffuse;
 uniform int u_use_texture;     // 1 = tekstura, 0 = gradient
 uniform int u_alpha_cutout;    // 1 = alpha discard
 
-// ---- NOWE: światło + materiał + przełączniki ----
 
 struct LightParam {
     vec3 Ambient;
@@ -23,21 +27,21 @@ struct LightParam {
     vec3 Direction;   // directional only (world space)
 };
 
-uniform int u_lightType; // 0 = point, 1 = directional
+uniform int u_lightType; 
 
 struct MaterialParam {
     vec3 Ambient;
     vec3 Diffuse;
     vec3 Specular;
-    float Shininess;  // 0..128
+    float Shininess;  
 };
 
 uniform LightParam u_light;
 uniform MaterialParam u_material;
 uniform vec3 u_cameraPos;
 
-uniform int u_useLighting; // 0 = bez oświetlenia
-uniform int u_specModel;   // 0 = Phong, 1 = Blinn-Phong
+uniform int u_useLighting; 
+uniform int u_specModel;  
 
 out vec4 FragColor;
 
@@ -118,6 +122,22 @@ void main() {
 
     // Final: oświetlenie moduluje kolor bazowy
     vec3 final_color = lightCoef * base_color;
+
+	if (u_envEnabled == 1 && u_envMode != 0) {
+		vec3 V = normalize(u_cameraPos - v_world_pos); 
+		vec3 I = -V;                                   
+
+		vec3 dir;
+		if (u_envMode == 1) {
+			dir = reflect(I, N);
+		} else {
+			dir = refract(I, N, u_refractEta);
+		}
+
+		vec3 env = texture(u_skybox, dir).rgb;
+
+		final_color = mix(final_color, env, clamp(u_envMix, 0.0, 1.0));
+	}
 
     FragColor = vec4(final_color, 1.0);
 }

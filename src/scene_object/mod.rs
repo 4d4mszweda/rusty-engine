@@ -9,6 +9,12 @@ use crate::mesh::Mesh;
 use crate::program::Program;
 use crate::textures::Texture;
 
+pub enum EnvMode {
+    Off,
+    Reflect,
+    Refract,
+}
+
 pub struct SceneObject {
     // BASE
     pub mesh: Rc<Mesh>,
@@ -28,6 +34,10 @@ pub struct SceneObject {
     pub texture: Option<Rc<Texture>>,
     pub use_texture: bool,
     pub alpha_cutout: bool,
+
+    pub env_mode: EnvMode,
+    pub env_mix: f32,
+    pub refract_eta: f32,
 }
 
 #[allow(dead_code)]
@@ -45,6 +55,9 @@ impl SceneObject {
             texture: None,
             use_texture: false,
             alpha_cutout: false,
+            env_mode: EnvMode::Off,
+            env_mix: 0.0,
+            refract_eta: 1.0 / 1.52,
         }
     }
 
@@ -72,6 +85,13 @@ impl SceneObject {
         self
     }
 
+    pub fn with_env(mut self, mode: EnvMode, mix: f32, eta: f32) -> Self {
+        self.env_mode = mode;
+        self.env_mix = mix;
+        self.refract_eta = eta;
+        self
+    }
+
     pub fn draw(&self, program: &Program, time: f32, view: &Matrix4<f32>, proj: &Matrix4<f32>) {
         program.use_program();
 
@@ -91,6 +111,16 @@ impl SceneObject {
         program.set_vec3("u_material.Diffuse", &self.material.diffuse);
         program.set_vec3("u_material.Specular", &self.material.specular);
         program.set_float("u_material.Shininess", self.material.shininess);
+        program.set_int(
+            "u_envMode",
+            match self.env_mode {
+                EnvMode::Off => 0,
+                EnvMode::Reflect => 1,
+                EnvMode::Refract => 2,
+            },
+        );
+        program.set_float("u_envMix", self.env_mix);
+        program.set_float("u_refractEta", self.refract_eta);
 
         if let Some(tex) = &self.texture {
             tex.bind(0);

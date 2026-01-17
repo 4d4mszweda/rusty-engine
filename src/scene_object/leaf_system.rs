@@ -39,13 +39,11 @@ impl LeafState {
             return;
         }
 
-        // instanced matrices -> VBO
         let mats = self.leaf_system.build_instance_matrices();
         self.leaf_mesh.update_instances(&mats);
 
         unsafe {
             gl::Disable(gl::CULL_FACE);
-            // przy discard nie potrzebujesz BLEND
         }
 
         self.leaf_program.use_program();
@@ -76,7 +74,7 @@ pub struct Leaf {
 
 pub struct LeafSystem {
     pub leaves: Vec<Leaf>,
-    pub area_half: Vector3<f32>, // rozmiar “chmury” liści (x,z) i wysokość startu
+    pub area_half: Vector3<f32>,
     pub floor_y: f32,
     pub enabled: bool,
 }
@@ -144,7 +142,7 @@ impl LeafSystem {
         let mut mats = Vec::with_capacity(self.leaves.len());
         for l in &self.leaves {
             let t = Matrix4::from_translation(l.pos);
-            let r = Matrix4::from_angle_y(Rad(l.rot)); // prosta rotacja
+            let r = Matrix4::from_angle_y(Rad(l.rot));
             let s = Matrix4::from_scale(l.scale);
             mats.push(t * r * s);
         }

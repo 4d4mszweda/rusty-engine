@@ -1,3 +1,4 @@
+pub mod sky_box;
 use std::rc::Rc;
 
 use cgmath::{InnerSpace, Matrix4, Rad, Vector3};

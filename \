@@ -81,7 +81,6 @@ impl Engine {
             objects: Vec::new(),
             camera,
             input,
-            skybox: SkyBoxState::default(),
             last_time,
             gui,
         }
@@ -128,10 +127,9 @@ impl Engine {
             let objects_count = self.objects.len();
             let camera = &mut self.camera;
             let prog = &mut self.program;
-            let skybox = &mut self.skybox;
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::print_ui(ctx, camera, prog, skybox, objects_count);
+                Engine::print_ui(ctx, camera, prog, objects_count);
             });
 
             self.render(current_time);
@@ -181,7 +179,6 @@ impl Engine {
         ctx: &egui::Context,
         camera: &mut Camera,
         program: &mut Program,
-        skybox: &mut SkyBoxState,
         objects_count: usize,
     ) {
         egui::Window::new("Debug").show(ctx, |ui| {
@@ -253,23 +250,6 @@ impl Engine {
                     program.world_light.spec_model = SpecModel::BlinnPhong;
                 }
             });
-        });
-        egui::Window::new("SkyBox").show(ctx, |ui| {
-            ui.label("Active skybox:");
-
-            egui::ComboBox::from_id_source("skybox_select")
-                .selected_text(
-                    skybox
-                        .skyboxes
-                        .get(skybox.skybox_selected)
-                        .map(|s| s.name.as_str())
-                        .unwrap_or("None"),
-                )
-                .show_ui(ui, |ui| {
-                    for (i, sb) in skybox.skyboxes.iter().enumerate() {
-                        ui.selectable_value(&mut skybox.skybox_selected, i, sb.name.clone());
-                    }
-                });
         });
     }
 

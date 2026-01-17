@@ -13,6 +13,7 @@ use crate::input;
 use crate::mesh::Mesh;
 use crate::program::Program;
 use crate::program::light::{LightType, SpecModel};
+use crate::scene_object::leaf_system::LeafState;
 use crate::scene_object::sky_box::SkyBoxState;
 use crate::scene_object::{Material, SceneObject};
 use crate::textures::Texture;
@@ -28,6 +29,7 @@ pub struct Engine {
     last_time: f32,                             // JUST TIME
     gui: Gui,                                   // GUI CONTEXT
     skybox: SkyBoxState,
+    leaf_system: LeafState,
 }
 
 impl Engine {
@@ -84,6 +86,7 @@ impl Engine {
             skybox: SkyBoxState::default(),
             last_time,
             gui,
+            leaf_system: LeafState::default(),
         }
     }
 
@@ -129,9 +132,10 @@ impl Engine {
             let camera = &mut self.camera;
             let prog = &mut self.program;
             let skybox = &mut self.skybox;
+            let leaf = &mut self.leaf_system;
 
             let full_output = self.gui.run(&self.window, current_time as f64, move |ctx| {
-                Engine::print_ui(ctx, camera, prog, skybox, objects_count);
+                Engine::print_ui(ctx, camera, prog, skybox, leaf, objects_count);
             });
 
             self.render(current_time);
@@ -164,9 +168,11 @@ impl Engine {
         let aspect = width as f32 / height as f32;
         let view = self.camera.view_matrix();
         let proj = self.camera.proj_matrix(aspect);
+        self.leaf_system.update(time);
         for obj in &self.objects {
             obj.draw(&self.program, time, &view, &proj);
         }
+        self.leaf_system.draw(&view, &proj);
 
         if let Some(sb) = self.skybox.skyboxes.get(self.skybox.skybox_selected) {
             sb.draw(&view, &proj);
@@ -182,6 +188,7 @@ impl Engine {
         camera: &mut Camera,
         program: &mut Program,
         skybox: &mut SkyBoxState,
+        leaf: &mut LeafState,
         objects_count: usize,
     ) {
         egui::Window::new("Debug").show(ctx, |ui| {
@@ -270,6 +277,17 @@ impl Engine {
                         ui.selectable_value(&mut skybox.skybox_selected, i, sb.name.clone());
                     }
                 });
+        });
+        egui::Window::new("Leaves").show(ctx, |ui| {
+            ui.checkbox(&mut leaf.leaf_system.enabled, "Enable falling leaves");
+
+            let mut count = leaf.leaf_system.leaves.len() as i32;
+            if ui
+                .add(egui::Slider::new(&mut count, 0..=5000).text("Count"))
+                .changed()
+            {
+                leaf.leaf_system.respawn_many(count as usize, 1234);
+            }
         });
     }
 

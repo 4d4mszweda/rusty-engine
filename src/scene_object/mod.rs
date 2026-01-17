@@ -1,3 +1,5 @@
+pub mod instanced_mesh;
+pub mod leaf_system;
 pub mod sky_box;
 use std::rc::Rc;
 

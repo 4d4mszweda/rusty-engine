@@ -19,7 +19,7 @@ impl Default for SkyBoxState {
                 SkyBox::from_folder("assets/textures/skybox2", "Skybox 2").expect("skybox2"),
                 SkyBox::from_folder("assets/textures/skybox3", "Skybox 3").expect("skybox3"),
             ],
-            skybox_selected: 0,
+            skybox_selected: 1,
         }
     }
 }

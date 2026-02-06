@@ -1,6 +1,7 @@
 use cgmath::{Matrix4, Point3, Vector3};
 use egui_glow::glow;
 use glfw::{Action, Context, Key};
+use rand::Rng;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
@@ -306,42 +307,9 @@ impl Engine {
         let mut objects = Vec::new();
 
         let ground_mesh = Rc::new(Mesh::from_obj("assets/models/ground-large.obj"));
-        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/palm.obj"));
-        let house_mesh = Rc::new(Mesh::from_obj("assets/models/kaktus.obj"));
-
-        let ground_tex =
-            Rc::new(Texture::from_file("assets/textures/ground.jpg").set_mirrored_repeat());
-        let cactus_tex = Rc::new(Texture::from_file("assets/textures/cactus.jpg"));
-
         let ground_model = Matrix4::from_scale(1.0);
-        let house_model = Matrix4::from_translation(cgmath::Vector3::new(2.0, 0.0, -4.0));
-        let tree_model = Matrix4::from_translation(cgmath::Vector3::new(-3.0, 0.0, -2.0));
-        let matte_model = Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, -3.0));
-        let glossy_model = Matrix4::from_translation(cgmath::Vector3::new(1.5, 0.0, -3.0));
-        let animated_model = Matrix4::from_translation(cgmath::Vector3::new(3.0, 0.0, -3.0));
-        let test_model = Matrix4::from_translation(cgmath::Vector3::new(4.0, 0.0, -4.0));
-        let test2_model = Matrix4::from_translation(cgmath::Vector3::new(5.0, 0.0, -5.0));
-
-        objects.push(
-            SceneObject::new(
-                house_mesh.clone(),
-                animated_model,
-                Vector3::new(0.8, 0.5, 0.5),
-            )
-            .with_rotation(Vector3::new(0.0, 1.0, 0.0), 1.0),
-        );
-        objects.push(
-            SceneObject::new(house_mesh.clone(), matte_model, Vector3::new(0.8, 0.2, 0.2))
-                .with_material(Material::matte()),
-        );
-        objects.push(
-            SceneObject::new(
-                house_mesh.clone(),
-                glossy_model,
-                Vector3::new(0.2, 0.6, 0.9),
-            )
-            .with_material(Material::glossy()),
-        );
+        let snow_tex =
+            Rc::new(Texture::from_file("assets/textures/snow.jpg").set_mirrored_repeat());
         objects.push(
             SceneObject::new(
                 ground_mesh.clone(),
@@ -349,31 +317,170 @@ impl Engine {
                 Vector3::new(0.6, 0.6, 0.6),
             )
             .with_ground(true)
-            .with_texture(ground_tex.clone(), false),
+            .with_texture(snow_tex.clone(), false),
         );
-        objects.push(SceneObject::new(
-            tree_mesh.clone(),
-            tree_model,
-            Vector3::new(0.1, 0.5, 0.1),
-        ));
+
+        let tree_mesh = Rc::new(Mesh::from_obj("assets/models/christmas-tree.obj"));
+        let mut rng = rand::thread_rng();
+        let count = 30;
+        // obszar rozrzutu
+        let x_min = -20.0;
+        let x_max = 20.0;
+        let z_min = -18.0;
+        let z_max = -3.0;
+        for _ in 0..count {
+            let x = rng.gen_range(x_min..x_max);
+            let z = rng.gen_range(z_min..z_max);
+
+            let scale = rng.gen_range(0.85..2.0);
+
+            let tree_model = Matrix4::from_translation(cgmath::Vector3::new(x, 0.0, z))
+                * Matrix4::from_scale(scale);
+
+            objects.push(SceneObject::new(
+                tree_mesh.clone(),
+                tree_model,
+                Vector3::new(0.1, 0.5, 0.1),
+            ));
+        }
+
+        let house_mesh = Rc::new(Mesh::from_obj("assets/models/cottage.obj"));
+        let house_model = Matrix4::from_translation(cgmath::Vector3::new(-20.0, 0.0, 20.0));
+        let house_tex = Rc::new(Texture::from_file("assets/textures/wood.jpg"));
         objects.push(
-            SceneObject::new(house_mesh.clone(), house_model, Vector3::new(1.0, 1.0, 1.0))
-                .with_texture(cactus_tex.clone(), false),
+            SceneObject::new(house_mesh.clone(), house_model, Vector3::new(0.8, 0.5, 0.5))
+                .with_texture(house_tex, false),
+        );
+
+        let sphere_mesh = Rc::new(Mesh::from_obj("assets/models/sphere.obj"));
+        // pozycja bazowa bałwana
+        let sm_x = 5.0;
+        let sm_z = 6.0;
+        let snowman_base = Matrix4::from_translation(cgmath::Vector3::new(sm_x, 0.0, sm_z))
+            * Matrix4::from_scale(2.0);
+        let snowman_mid = Matrix4::from_translation(cgmath::Vector3::new(sm_x, 1.3, sm_z))
+            * Matrix4::from_scale(1.7);
+        let snowman_head = Matrix4::from_translation(cgmath::Vector3::new(sm_x, 2.5, sm_z))
+            * Matrix4::from_scale(1.0);
+        objects.push(
+            SceneObject::new(
+                sphere_mesh.clone(),
+                snowman_base,
+                Vector3::new(0.98, 0.98, 1.0),
+            )
+            .with_material(Material::matte())
+            .with_texture(snow_tex.clone(), false),
         );
         objects.push(
-            SceneObject::new(house_mesh.clone(), test_model, Vector3::new(1.0, 1.0, 1.0))
-                .with_material(Material::glossy())
-                .with_env(EnvMode::Reflect, 0.85, 1.0 / 1.52)
-                .with_texture(cactus_tex.clone(), false)
-                .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
+            SceneObject::new(
+                sphere_mesh.clone(),
+                snowman_mid,
+                Vector3::new(0.98, 0.98, 1.0),
+            )
+            .with_material(Material::matte())
+            .with_texture(snow_tex.clone(), false),
         );
         objects.push(
-            SceneObject::new(house_mesh.clone(), test2_model, Vector3::new(1.0, 1.0, 1.0))
-                .with_material(Material::matte())
-                .with_env(EnvMode::Refract, 0.85, 1.0 / 1.52)
-                .with_texture(cactus_tex.clone(), false)
-                .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
+            SceneObject::new(
+                sphere_mesh.clone(),
+                snowman_head,
+                Vector3::new(0.98, 0.98, 1.0),
+            )
+            .with_material(Material::matte())
+            .with_texture(snow_tex.clone(), false),
         );
+        let nose = Matrix4::from_translation(cgmath::Vector3::new(sm_x + 0.25, 2.5, sm_z + 0.45))
+            * Matrix4::from_scale(0.2);
+        objects.push(
+            SceneObject::new(sphere_mesh.clone(), nose, Vector3::new(1.0, 0.5, 0.1))
+                .with_material(Material::matte()),
+        );
+
+        let rock_mesh = Rc::new(Mesh::from_obj("assets/models/rock.obj"));
+        let rock_tex = Rc::new(Texture::from_file("assets/textures/rock.jpg"));
+        let rocks = [
+            (2.0, -4.5, 0.5),
+            (4.0, -8.0, 0.3),
+            (-2.5, -7.0, 0.1),
+            (-6.0, -4.0, 0.8),
+            (0.5, -10.0, 0.6),
+        ];
+        for (x, z, scale) in rocks {
+            let model = Matrix4::from_translation(cgmath::Vector3::new(x, 0.0, z))
+                * Matrix4::from_scale(scale);
+
+            objects.push(
+                SceneObject::new(rock_mesh.clone(), model, Vector3::new(1.0, 1.0, 1.0))
+                    .with_material(Material::matte())
+                    .with_texture(rock_tex.clone(), false),
+            );
+        }
+
+        let straw_mesh = Rc::new(Mesh::from_obj("assets/models/truskawka.obj"));
+        let ice_reflect_model = Matrix4::from_translation(cgmath::Vector3::new(3.0, 2.0, 13.0))
+            * Matrix4::from_scale(2.6);
+
+        objects.push(
+            SceneObject::new(
+                straw_mesh.clone(),
+                ice_reflect_model,
+                Vector3::new(0.85, 0.95, 1.0),
+            )
+            .with_material(Material::glossy())
+            .with_env(EnvMode::Reflect, 0.9, 1.0 / 1.52)
+            .with_rotation(cgmath::Vector3::new(0.0, 2.0, 0.0), 3.0),
+        );
+
+        let ice_refract_model = Matrix4::from_translation(cgmath::Vector3::new(6.0, 2.0, 10.0))
+            * Matrix4::from_scale(2.0);
+
+        objects.push(
+            SceneObject::new(
+                straw_mesh.clone(),
+                ice_refract_model,
+                Vector3::new(0.75, 0.9, 1.0),
+            )
+            .with_material(Material::glossy())
+            .with_env(EnvMode::Refract, 0.92, 1.0 / 1.31)
+            .with_rotation(cgmath::Vector3::new(0.0, 2.0, 0.0), 3.0),
+        );
+
+        //let matte_model = Matrix4::from_translation(cgmath::Vector3::new(0.0, 0.0, -3.0));
+        //let glossy_model = Matrix4::from_translation(cgmath::Vector3::new(1.5, 0.0, -3.0));
+        //let animated_model = Matrix4::from_translation(cgmath::Vector3::new(3.0, 0.0, -3.0));
+        //let test_model = Matrix4::from_translation(cgmath::Vector3::new(4.0, 0.0, -4.0));
+        //let test2_model = Matrix4::from_translation(cgmath::Vector3::new(5.0, 0.0, -5.0));
+
+        //objects.push(
+        //    SceneObject::new(house_mesh.clone(), matte_model, Vector3::new(0.8, 0.2, 0.2))
+        //        .with_material(Material::matte()),
+        //);
+        //objects.push(
+        //    SceneObject::new(
+        //        house_mesh.clone(),
+        //        glossy_model,
+        //        Vector3::new(0.2, 0.6, 0.9),
+        //    )
+        //    .with_material(Material::glossy()),
+        //);
+        //objects.push(
+        //    SceneObject::new(house_mesh.clone(), house_model, Vector3::new(1.0, 1.0, 1.0))
+        //        .with_texture(cactus_tex.clone(), false),
+        //);
+        //objects.push(
+        //    SceneObject::new(house_mesh.clone(), test_model, Vector3::new(1.0, 1.0, 1.0))
+        //        .with_material(Material::glossy())
+        //        .with_env(EnvMode::Reflect, 0.85, 1.0 / 1.52)
+        //        .with_texture(cactus_tex.clone(), false)
+        //        .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
+        //);
+        //objects.push(
+        //    SceneObject::new(house_mesh.clone(), test2_model, Vector3::new(1.0, 1.0, 1.0))
+        //        .with_material(Material::matte())
+        //        .with_env(EnvMode::Refract, 0.85, 1.0 / 1.52)
+        //        .with_texture(cactus_tex.clone(), false)
+        //        .with_rotation(Vector3::new(0.0, 1.0, 0.0), 0.8),
+        //);
 
         self.objects = objects;
         self

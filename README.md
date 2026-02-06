@@ -83,7 +83,7 @@ W repozytorium znajduje się przykładowa scena **zimowa**, zbudowana w całośc
 - kilka drzew (wariacje skali i rotacji),
 - zaspy i kamienie,
 - bałwana złożonego z kilku sfer,
-- element “lodowy” wykorzystujący **refraction** (efekt szkła/lodu),
+- element wykorzystujący **refraction** i **reflection** (efekt szkła i lustra),
 - Rendering instancyjny “opady śniegu” (jeśli włączone w konfiguracji sceny).
 
 ---
